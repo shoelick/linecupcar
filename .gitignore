@@ -2,3 +2,4 @@
 gdb_test
 Makefile
 build
+._

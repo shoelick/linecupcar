@@ -8,11 +8,10 @@
 
 #define NULL    0
 
-#define ADC_ERR_INIT   1
 
-int init_adc(adc_driver *driver, int adc_num) {
+int adc_init(adc_driver *driver, int adc_num) {
 
-    int retval = 0;
+    int retval = ADC_ERR_NONE;
     unsigned int calib = 0;
 
     /* Protect against null pointer */
@@ -48,7 +47,8 @@ int init_adc(adc_driver *driver, int adc_num) {
 
     if (retval == ADC_ERR_NONE) {
         /* Set default configuration */
-
+		
+		
         /* Do calibration */
         driver->regs->SC3 = ADC_SC3_CAL_MASK;
         while ( (driver->regs->SC3 & ADC_SC3_CAL_MASK) != 0 );
@@ -75,13 +75,13 @@ int init_adc(adc_driver *driver, int adc_num) {
     return retval;
 }
 
-void enable_interrupt(adc_driver *driver) {
+void adc_enable_int(adc_driver *driver) {
 	
 		// Enable NVIC interrupt
         NVIC_EnableIRQ(driver->irqn);
 }
 
-uint32_t get_data(adc_driver *driver) {
+uint32_t adc_get_data(adc_driver *driver) {
 
     return (driver->regs->R[1] << 16) | driver->regs->R[0];
 }

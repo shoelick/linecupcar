@@ -1,0 +1,46 @@
+Dependencies for Project 'linecupcar', Target 'Target 1': (DO NOT MODIFY !)
+F (..\src\adc_driver.c)(0x58E7A3E8)(-c --cpu Cortex-M4.fp -g -O0 --apcs=interwork --split_sections -I..\inc-I D:\linecarcup\keil\RTE-I C:\Keil_v5\ARM\PACK\ARM\CMSIS\5.0.0-Beta4\CMSIS\Include-I C:\Keil_v5\ARM\PACK\Keil\Kinetis_K60_DFP\1.4.0\Device\Include-D__UVISION_VERSION="515" -D_RTE_ -DMK64FN1M0xxx12-o .\objects\adc_driver.o --omf_browse .\objects\adc_driver.crf --depend .\objects\adc_driver.d)
+I (..\src\../cmsis/MK64F12/MK64F12.h)(0x58E78AE0)
+I (C:\Keil_v5\ARM\ARMCC\include\stdint.h)(0x54C2FC88)
+I (C:\Keil_v5\ARM\PACK\ARM\CMSIS\5.0.0-Beta4\CMSIS\Include\core_cm4.h)(0x57364C6E)
+I (C:\Keil_v5\ARM\PACK\ARM\CMSIS\5.0.0-Beta4\CMSIS\Include\core_cminstr.h)(0x5735E576)
+I (C:\Keil_v5\ARM\PACK\ARM\CMSIS\5.0.0-Beta4\CMSIS\Include\cmsis_armcc.h)(0x5735E576)
+I (C:\Keil_v5\ARM\PACK\ARM\CMSIS\5.0.0-Beta4\CMSIS\Include\core_cmfunc.h)(0x5735E576)
+I (C:\Keil_v5\ARM\PACK\ARM\CMSIS\5.0.0-Beta4\CMSIS\Include\core_cmsimd.h)(0x5735E576)
+I (C:\Keil_v5\ARM\PACK\Keil\Kinetis_K60_DFP\1.4.0\Device\Include\system_MK64F12.h)(0x5404B3D0)
+I (..\inc\adc_driver.h)(0x58E79BEE)
+I (C:\Keil_v5\ARM\PACK\Keil\Kinetis_K60_DFP\1.4.0\Device\Include\MK64F12.h)(0x5404B3D0)
+F (.\test.c)(0x58E7A67E)(-c --cpu Cortex-M4.fp -g -O0 --apcs=interwork --split_sections -I..\inc-I D:\linecarcup\keil\RTE-I C:\Keil_v5\ARM\PACK\ARM\CMSIS\5.0.0-Beta4\CMSIS\Include-I C:\Keil_v5\ARM\PACK\Keil\Kinetis_K60_DFP\1.4.0\Device\Include-D__UVISION_VERSION="515" -D_RTE_ -DMK64FN1M0xxx12-o .\objects\test.o --omf_browse .\objects\test.crf --depend .\objects\test.d)
+I (..\inc\adc_driver.h)(0x58E79BEE)
+I (C:\Keil_v5\ARM\PACK\Keil\Kinetis_K60_DFP\1.4.0\Device\Include\MK64F12.h)(0x5404B3D0)
+I (C:\Keil_v5\ARM\ARMCC\include\stdint.h)(0x54C2FC88)
+I (C:\Keil_v5\ARM\PACK\ARM\CMSIS\5.0.0-Beta4\CMSIS\Include\core_cm4.h)(0x57364C6E)
+I (C:\Keil_v5\ARM\PACK\ARM\CMSIS\5.0.0-Beta4\CMSIS\Include\core_cminstr.h)(0x5735E576)
+I (C:\Keil_v5\ARM\PACK\ARM\CMSIS\5.0.0-Beta4\CMSIS\Include\cmsis_armcc.h)(0x5735E576)
+I (C:\Keil_v5\ARM\PACK\ARM\CMSIS\5.0.0-Beta4\CMSIS\Include\core_cmfunc.h)(0x5735E576)
+I (C:\Keil_v5\ARM\PACK\ARM\CMSIS\5.0.0-Beta4\CMSIS\Include\core_cmsimd.h)(0x5735E576)
+I (C:\Keil_v5\ARM\PACK\Keil\Kinetis_K60_DFP\1.4.0\Device\Include\system_MK64F12.h)(0x5404B3D0)
+I (..\inc\ftm_driver.h)(0x58E7A580)
+F (..\inc\adc_driver.h)(0x58E79BEE)()
+F (..\inc\linescan_driver.h)(0x58E796E6)()
+F (..\inc\ftm_driver.h)(0x58E7A580)()
+F (..\src\ftm_driver.c)(0x58E7A5FA)(-c --cpu Cortex-M4.fp -g -O0 --apcs=interwork --split_sections -I..\inc-I D:\linecarcup\keil\RTE-I C:\Keil_v5\ARM\PACK\ARM\CMSIS\5.0.0-Beta4\CMSIS\Include-I C:\Keil_v5\ARM\PACK\Keil\Kinetis_K60_DFP\1.4.0\Device\Include-D__UVISION_VERSION="515" -D_RTE_ -DMK64FN1M0xxx12-o .\objects\ftm_driver.o --omf_browse .\objects\ftm_driver.crf --depend .\objects\ftm_driver.d)
+I (C:\Keil_v5\ARM\PACK\Keil\Kinetis_K60_DFP\1.4.0\Device\Include\MK64F12.h)(0x5404B3D0)
+I (C:\Keil_v5\ARM\ARMCC\include\stdint.h)(0x54C2FC88)
+I (C:\Keil_v5\ARM\PACK\ARM\CMSIS\5.0.0-Beta4\CMSIS\Include\core_cm4.h)(0x57364C6E)
+I (C:\Keil_v5\ARM\PACK\ARM\CMSIS\5.0.0-Beta4\CMSIS\Include\core_cminstr.h)(0x5735E576)
+I (C:\Keil_v5\ARM\PACK\ARM\CMSIS\5.0.0-Beta4\CMSIS\Include\cmsis_armcc.h)(0x5735E576)
+I (C:\Keil_v5\ARM\PACK\ARM\CMSIS\5.0.0-Beta4\CMSIS\Include\core_cmfunc.h)(0x5735E576)
+I (C:\Keil_v5\ARM\PACK\ARM\CMSIS\5.0.0-Beta4\CMSIS\Include\core_cmsimd.h)(0x5735E576)
+I (C:\Keil_v5\ARM\PACK\Keil\Kinetis_K60_DFP\1.4.0\Device\Include\system_MK64F12.h)(0x5404B3D0)
+I (..\inc\ftm_driver.h)(0x58E7A580)
+F (RTE\Device\MK64FN1M0xxx12\startup_MK64F12.s)(0x5404B3D0)(--cpu Cortex-M4.fp -g --apcs=interwork -I D:\linecarcup\keil\RTE-I C:\Keil_v5\ARM\PACK\ARM\CMSIS\5.0.0-Beta4\CMSIS\Include-I C:\Keil_v5\ARM\PACK\Keil\Kinetis_K60_DFP\1.4.0\Device\Include--pd "__UVISION_VERSION SETA 515" --pd "_RTE_ SETA 1" --pd "MK64FN1M0xxx12 SETA 1"--list .\listings\startup_mk64f12.lst --xref -o .\objects\startup_mk64f12.o --depend .\objects\startup_mk64f12.d)
+F (RTE\Device\MK64FN1M0xxx12\system_MK64F12.c)(0x5404B3D0)(-c --cpu Cortex-M4.fp -g -O0 --apcs=interwork --split_sections-I D:\linecarcup\keil\RTE-I C:\Keil_v5\ARM\PACK\ARM\CMSIS\5.0.0-Beta4\CMSIS\Include-I C:\Keil_v5\ARM\PACK\Keil\Kinetis_K60_DFP\1.4.0\Device\Include-D__UVISION_VERSION="515" -D_RTE_ -DMK64FN1M0xxx12-o .\objects\system_mk64f12.o --omf_browse .\objects\system_mk64f12.crf --depend .\objects\system_mk64f12.d)
+I (C:\Keil_v5\ARM\ARMCC\include\stdint.h)(0x54C2FC88)
+I (C:\Keil_v5\ARM\PACK\Keil\Kinetis_K60_DFP\1.4.0\Device\Include\MK64F12.h)(0x5404B3D0)
+I (C:\Keil_v5\ARM\PACK\ARM\CMSIS\5.0.0-Beta4\CMSIS\Include\core_cm4.h)(0x57364C6E)
+I (C:\Keil_v5\ARM\PACK\ARM\CMSIS\5.0.0-Beta4\CMSIS\Include\core_cminstr.h)(0x5735E576)
+I (C:\Keil_v5\ARM\PACK\ARM\CMSIS\5.0.0-Beta4\CMSIS\Include\cmsis_armcc.h)(0x5735E576)
+I (C:\Keil_v5\ARM\PACK\ARM\CMSIS\5.0.0-Beta4\CMSIS\Include\core_cmfunc.h)(0x5735E576)
+I (C:\Keil_v5\ARM\PACK\ARM\CMSIS\5.0.0-Beta4\CMSIS\Include\core_cmsimd.h)(0x5735E576)
+I (C:\Keil_v5\ARM\PACK\Keil\Kinetis_K60_DFP\1.4.0\Device\Include\system_MK64F12.h)(0x5404B3D0)
