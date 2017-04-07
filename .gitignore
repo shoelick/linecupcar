@@ -2,4 +2,7 @@
 gdb_test
 Makefile
 build
-._
+._*
+keil/Listings
+keil/Objects
+keil/RTE
