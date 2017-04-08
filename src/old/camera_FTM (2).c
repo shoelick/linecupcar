@@ -285,9 +285,9 @@ void init_ADC0(void) {
     // Turn on ADC0
     SIM_SCGC6 |= SIM_SCGC6_ADC0_MASK;
 	
-		// Single ended 16 bit conversion, no clock divider
-		ADC0_CFG1 |= ADC_CFG1_MODE(0x3);
-		ADC0_CFG1 |= ADC_CFG1_ADIV(0x0);
+	// Single ended 16 bit conversion, no clock divider
+	ADC0_CFG1 |= ADC_CFG1_MODE(0x3);
+	ADC0_CFG1 |= ADC_CFG1_ADIV(0x0);
 	
     
     // Do ADC Calibration for Singled Ended ADC. Do not touch.

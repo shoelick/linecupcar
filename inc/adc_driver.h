@@ -13,6 +13,8 @@
 #define ADC_ERR_NONE 0
 #define ADC_ERR_INIT 1
 
+#define ADC_TRGSEL_FTM0 8
+
 typedef struct adc_driver {
     ADC_Type *regs;
     IRQn_Type irqn; 

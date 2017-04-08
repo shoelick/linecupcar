@@ -46,30 +46,25 @@ int adc_init(adc_driver *driver, int adc_num) {
     }
 
     if (retval == ADC_ERR_NONE) {
-        /* Set default configuration */
-		
-		
-        /* Do calibration */
-        driver->regs->SC3 = ADC_SC3_CAL_MASK;
-        while ( (driver->regs->SC3 & ADC_SC3_CAL_MASK) != 0 );
-        calib = driver->regs->CLP0; 
-        calib += driver->regs->CLP1; 
-        calib += driver->regs->CLP2;
-        calib = calib >> 1; calib |= 0x8000;
-        driver->regs->PG = calib;
+			/* Set default configuration */
+			
+			/* Do calibration */
+			driver->regs->SC3 = ADC_SC3_CAL_MASK;
+			while ( (driver->regs->SC3 & ADC_SC3_CAL_MASK) != 0 );
+			calib = driver->regs->CLP0; 
+			calib += driver->regs->CLP1; 
+			calib += driver->regs->CLP2;
+			calib = calib >> 1; calib |= 0x8000;
+			driver->regs->PG = calib;
 
-        // Select hardware trigger.
-        driver->regs->SC2 |= ADC_SC2_ADTRG_MASK;
-        
-        // Set to single ended mode	
-		driver->regs->SC1[0] |= ADC_SC1_AIEN_MASK; 
-		driver->regs->SC1[0] &= ~(ADC_SC1_ADCH_MASK);
-		driver->regs->SC1[0] |= 0x1;
-	
-		// Set up FTM2 trigger on ADC0
-		SIM_SOPT7 |= SIM_SOPT7_ADC0TRGSEL(0xA); // FTM2 select
-		SIM_SOPT7 |= SIM_SOPT7_ADC0ALTTRGEN_MASK; // Alternative trigger en.
-		SIM_SOPT7 &= ~(SIM_SOPT7_ADC0PRETRGSEL_MASK); // Pretrigger A
+			// Select hardware trigger.
+			driver->regs->SC2 |= ADC_SC2_ADTRG_MASK;
+					
+			// Set to single ended mode	
+			driver->regs->SC1[0] |= ADC_SC1_AIEN_MASK; 
+			driver->regs->SC1[0] &= ~(ADC_SC1_ADCH_MASK);
+			driver->regs->SC1[0] |= 0x0; // select channel 0
+		
     }
 
     return retval;
@@ -78,7 +73,7 @@ int adc_init(adc_driver *driver, int adc_num) {
 void adc_enable_int(adc_driver *driver) {
 	
 		// Enable NVIC interrupt
-        NVIC_EnableIRQ(driver->irqn);
+		NVIC_EnableIRQ(driver->irqn);
 }
 
 uint32_t adc_get_data(adc_driver *driver) {
