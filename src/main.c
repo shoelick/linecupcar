@@ -1,5 +1,8 @@
 /* 
- * This file will contain the main racing program.
+ * main.c
+ * The main racing program for Imagine RIT Line-Following Car Cup.
+ * Author: Michael Shullick
+ * April, 2017
  */
 
 /*****************************************************************************
@@ -39,9 +42,21 @@
 #include <string.h>
 #include "uart.h"
 
-/* Camera debugging */
-camera_driver camera;
-char str[100];
+/* Used to debug camera processing */
+void matlab_print();
+
+char str[100]; /* This is used to print from everywhere */
+camera_driver camera; /* Externally defined for use in ISRs */
+
+/* Macro to turn the setpoint into a servo duty */
+const int SERVO_MIN  = 0.06;
+const int SERVO_MAX  = 0.12;
+#define TO_SERVO_DUTY(S) ((SERVO_MIN-SERVO_MAX) * S + SERVO_MIN) 
+
+/* FTM Channels */
+const int CH_STARBOARD = 0;
+const int CH_PORT = 1;
+const int CH_SERVO = 0;
 
 int main() {
 
@@ -50,8 +65,8 @@ int main() {
      **************************************************************************/
     ftm_driver dc_ftm, servo_ftm, camera_ftm;
     adc_driver adc;
-	
-	  int i;
+
+    int i; // delete this?
 
     /* Set camera struct valus */
     camera.pixcnt = 0;
@@ -60,6 +75,15 @@ int main() {
     camera.clkval = 0;
     camera.ftm = &camera_ftm;
     camera.adc = &adc;
+
+    /* Setpoint values */
+    double s_throttle = 0.5, p_throttle = 0.5, steer = 0.5;
+
+    /* state management */
+    uint8_t running = 0;
+    uint8_t button_held = 0, state_color = 1, line_detected = 0;
+    int light_elapsed = 0;
+    const int LIGHT_INT = 500;
 
     /***************************************************************************
      * CONFIGURATION
@@ -77,21 +101,21 @@ int main() {
     // GPIO camera clk, SI
     PORTC_PCR1 = PORT_PCR_MUX(1); // CLK
     PORTC_PCR4 = PORT_PCR_MUX(1); // SI
-	  GPIOC_PDDR |= (1 << 1); // Set output
-	  GPIOC_PDDR |= (1 << 4);
-	  GPIOB_PSOR |= (1 << 1); // Set default value
-	  GPIOB_PSOR |= (1 << 4);
+    GPIOC_PDDR |= (1 << 1); // Set output
+    GPIOC_PDDR |= (1 << 4);
+    GPIOB_PSOR |= (1 << 1); // Set default value
+    GPIOB_PSOR |= (1 << 4);
 
     // Initialize uart for debugging
     uart_init();
 
-		sprintf(str, "MOD: %d C0V: %d \r\n", dc_ftm.regs->MOD, \
-			dc_ftm.regs->CONTROLS[0].CnV);
-		uart_put(str);
+    sprintf(str, "MOD: %d C0V: %d \r\n", dc_ftm.regs->MOD, \
+            dc_ftm.regs->CONTROLS[0].CnV);
+    uart_put(str);
 
     // Configure DC FTM
     ftm_init(&dc_ftm, 3); /* use ftm3 for dc motors */
-		
+
     ftm_set_frequency(&dc_ftm, 0, 10e3);
     ftm_enable_pwm(&dc_ftm, 0);
     ftm_enable_pwm(&dc_ftm, 1);
@@ -108,13 +132,13 @@ int main() {
 
     // Configure camera FTM
     ftm_init(&camera_ftm, 0);
-		ftm_set_frequency(&camera_ftm, 0, DEFAULT_SYSTEM_CLOCK / 100);
-		ftm_enable_cntin_trig(&camera_ftm);
+    ftm_set_frequency(&camera_ftm, 0, DEFAULT_SYSTEM_CLOCK / 100);
+    ftm_enable_cntin_trig(&camera_ftm);
 
     // Configure camera ADC
     adc_init(&adc, 0);
-		adc_enable_int(&adc);
-		adc_set_ftm0_trig(&adc);
+    adc_enable_int(&adc);
+    adc_set_ftm0_trig(&adc);
 
     // Set up PIT 
     init_PIT();
@@ -125,45 +149,92 @@ int main() {
     /***************************************************************************
      * LOOP
      **************************************************************************/
-		 //dc_ftm.regs->MOD = 0x800;
-		 //dc_ftm.regs->CONTROLS[0].CnV = 0x666;
-		sprintf(str, "Entering loop with MOD: %d C0V: %d \r\n", dc_ftm.regs->MOD, \
-		dc_ftm.regs->CONTROLS[0].CnV);
-		uart_put(str);
-		 
-    while (1) {
-			
-			/*sprintf(str, "MOD: %d C0V: %d \r\n", dc_ftm.regs->MOD, \
-				dc_ftm.regs->CONTROLS[0].CnV);
-			uart_put(str);
-			delay(10);*/
 
-			if (DEBUG_CAM) { // Every 2 seconds
-				//if (capcnt >= (2/INTEGRATION_TIME)) {
-				if (camera.capcnt >= (500)) {
-									// Set SI
-					GPIOC_PCOR |= (1 << 4);
-					// send the array over uart
-					sprintf(str,"%i\n\r",-1); // start value
-					uart_put(str);
-					for (i = 0; i < 127; i++) {
-						sprintf(str,"%i\r\n", camera.scan[i]);
-						uart_put(str);
-					}
-					sprintf(str,"%i\n\r",-2); // end value
-					uart_put(str);
-					camera.capcnt = 0;
-					GPIOC_PSOR |= (1 << 4);
-				}
-			}
-			
-	}
+    while (1) {
+
+        /* Output to UART if enabled */
+        if (DEBUG_CAM) matlab_print();
+
+        /* Do camera processing */
+        line_deteced = 0;
+
+        /* Compute error */
+
+        
+        if (running) {
+
+            // update values 
+
+        } else {
+
+            // slow down
+
+        }
+
+        /* Motors Update */
+        ftm_set_duty(&dc_ftm, CH_STARBOARD, s_throttle);
+        ftm_set_duty(&dc_ftm, CH_PORT, p_throttle);
+        ftm_set_duty(&servo_ftm, CH_SERVO, TO_SERVO_DUTY(steering));
+            
+        /* Update LED */
+        if (light_elapsed >= LIGHT_INT) {
+
+            if (state_color) {
+                (running) ? set_led(BLUE) : set_led(RED);
+            } else {
+                (line_deteced) ? set_led(GREEN) : set_led(OFF);    
+            }
+
+            state_color = !state_color;
+            light_elapsed = 0;
+
+        } else {
+            light_elapsed++;
+        }
+
+        /* Update state */
+        if (sw_active() && !button_held) {
+
+            running = !running;
+            button_held = 1;
+
+        } else if (!sw_active && button_held) {
+            button_held = 0;
+        }
+    }
 }
 
+/*
+ * Waste time 
+ */
 void delay(int del){
     int i;
     for (i=0; i<del*50000; i++){
         // Do nothing
     }
 }
+
+/*
+ * This function prints out camera values in a format expected by a listening 
+ * matlab instance.
+ */
+void matlab_print() {
+
+        //if (capcnt >= (2/INTEGRATION_TIME)) {
+        if (camera.capcnt >= (500)) {
+            // Set SI
+            GPIOC_PCOR |= (1 << 4);
+            // send the array over uart
+            sprintf(str,"%i\n\r",-1); // start value
+            uart_put(str);
+            for (i = 0; i < 127; i++) {
+                sprintf(str,"%i\r\n", camera.scan[i]);
+                uart_put(str);
+            }
+            sprintf(str,"%i\n\r",-2); // end value
+            uart_put(str);
+            camera.capcnt = 0;
+            GPIOC_PSOR |= (1 << 4);
+        }
+    }
 

@@ -9,4 +9,3 @@ extern char str[100];
 #define DEBUG_CAM               1
 
 void delay(int del);
-
