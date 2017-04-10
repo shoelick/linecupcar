@@ -31,26 +31,27 @@
  * 
  *****************************************************************************/
 
-#include "MK64F12.h"
+/* System includes */
+#include <stdio.h>
+#include <string.h>
+#include <MK64F12.h>
+
+/* Project includes */
 #include "main.h"
 #include "ftm_driver.h"
+#include "gpio.h"
 #include "adc_driver.h"
 #include "pit_driver.h"
 #include "camera_driver.h"
-#include <stdio.h>
 #include "stdlib.h"
-#include <string.h>
 #include "uart.h"
-
-/* Used to debug camera processing */
-void matlab_print();
 
 char str[100]; /* This is used to print from everywhere */
 camera_driver camera; /* Externally defined for use in ISRs */
 
 /* Macro to turn the setpoint into a servo duty */
-const int SERVO_MIN  = 0.06;
-const int SERVO_MAX  = 0.12;
+const double SERVO_MIN  = 0.06;
+const double SERVO_MAX  = 0.12;
 #define TO_SERVO_DUTY(S) ((SERVO_MIN-SERVO_MAX) * S + SERVO_MIN) 
 
 /* FTM Channels */
@@ -66,7 +67,14 @@ int main() {
     ftm_driver dc_ftm, servo_ftm, camera_ftm;
     adc_driver adc;
 
-    int i; // delete this?
+    /* Setpoint values */
+    double s_throttle = 0.5, p_throttle = 0.5, steering = 0.5;
+
+    /* state management */
+    uint8_t running = 0, sw;
+    uint8_t button_held = 0, state_color = 1, line_detected = 0;
+    long int light_elapsed = 0;
+    const long int LIGHT_INT = 300000;
 
     /* Set camera struct valus */
     camera.pixcnt = 0;
@@ -75,16 +83,7 @@ int main() {
     camera.clkval = 0;
     camera.ftm = &camera_ftm;
     camera.adc = &adc;
-
-    /* Setpoint values */
-    double s_throttle = 0.5, p_throttle = 0.5, steer = 0.5;
-
-    /* state management */
-    uint8_t running = 0;
-    uint8_t button_held = 0, state_color = 1, line_detected = 0;
-    int light_elapsed = 0;
-    const int LIGHT_INT = 500;
-
+		
     /***************************************************************************
      * CONFIGURATION
      **************************************************************************/
@@ -105,6 +104,10 @@ int main() {
     GPIOC_PDDR |= (1 << 4);
     GPIOB_PSOR |= (1 << 1); // Set default value
     GPIOB_PSOR |= (1 << 4);
+
+		// Initialize the rest of the GPIO for buttons/LEDs
+		led_init();
+		button_init();
 
     // Initialize uart for debugging
     uart_init();
@@ -156,7 +159,7 @@ int main() {
         if (DEBUG_CAM) matlab_print();
 
         /* Do camera processing */
-        line_deteced = 0;
+        line_detected = 1;
 
         /* Compute error */
 
@@ -172,17 +175,17 @@ int main() {
         }
 
         /* Motors Update */
-        ftm_set_duty(&dc_ftm, CH_STARBOARD, s_throttle);
-        ftm_set_duty(&dc_ftm, CH_PORT, p_throttle);
-        ftm_set_duty(&servo_ftm, CH_SERVO, TO_SERVO_DUTY(steering));
+        //ftm_set_duty(&dc_ftm, CH_STARBOARD, s_throttle);
+        //ftm_set_duty(&dc_ftm, CH_PORT, p_throttle);
+        //ftm_set_duty(&servo_ftm, CH_SERVO, TO_SERVO_DUTY(steering));
             
         /* Update LED */
         if (light_elapsed >= LIGHT_INT) {
 
             if (state_color) {
-                (running) ? set_led(BLUE) : set_led(RED);
+                (running) ? set_led(GREEN) : set_led(RED);
             } else {
-                (line_deteced) ? set_led(GREEN) : set_led(OFF);    
+                (line_detected) ? set_led(BLUE) : set_led(OFF);    
             }
 
             state_color = !state_color;
@@ -193,14 +196,17 @@ int main() {
         }
 
         /* Update state */
-        if (sw_active() && !button_held) {
+				sw = sw_active();
+        if (sw && !button_held) {
 
             running = !running;
             button_held = 1;
 
-        } else if (!sw_active && button_held) {
+        } else if (!sw && button_held) {
             button_held = 0;
-        }
+        } else {
+					continue;
+				}
     }
 }
 
@@ -219,6 +225,7 @@ void delay(int del){
  * matlab instance.
  */
 void matlab_print() {
+				int i;
 
         //if (capcnt >= (2/INTEGRATION_TIME)) {
         if (camera.capcnt >= (500)) {

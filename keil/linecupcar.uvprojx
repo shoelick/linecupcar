@@ -450,6 +450,11 @@
               <FileType>5</FileType>
               <FilePath>..\inc\main.h</FilePath>
             </File>
+            <File>
+              <FileName>gpio.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\inc\gpio.h</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -652,6 +657,11 @@
               <FileName>camera_driver.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\src\camera_driver.c</FilePath>
+            </File>
+            <File>
+              <FileName>gpio.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\src\gpio.c</FilePath>
             </File>
           </Files>
         </Group>

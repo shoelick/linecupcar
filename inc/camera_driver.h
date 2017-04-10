@@ -12,4 +12,4 @@ typedef struct camera_driver {
 
 extern camera_driver camera;
 
-void mvg_average(int *data, int size);
+void mvg_average(int *data, int size, int n);

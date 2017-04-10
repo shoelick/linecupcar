@@ -4,6 +4,7 @@
  */
 
 #include "MK64F12.h"                    // Device header
+#include "gpio.h"
 
 void led_init(void) {
     // Enable clocks on Ports B, C and E for LED timing
@@ -45,7 +46,7 @@ void button_init(void) {
 }
 
 void set_led(color_t color) {
-    switch(cur_color) {
+    switch(color) {
         case RED:
             // Red
             GPIOB_PCOR = 1UL << 22;
