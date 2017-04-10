@@ -1,3 +1,6 @@
+#include "ftm_driver.h"
+#include "adc_driver.h"
+
 typedef struct camera_driver {
     int pixcnt;
     int capcnt;

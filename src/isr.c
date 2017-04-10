@@ -5,6 +5,7 @@
  */
 
 #include "camera_driver.h"
+#include "main.h"
 #include "MK64F12.h"
 
 /*
@@ -12,37 +13,37 @@
  */
 void FTM0_IRQHandler(void){ //For FTM timer
 	
+	// Handle on ADC value
+	uint16_t adcval = camera.adc->regs->R[0];
+	
 	// Clear interrupt
 	FTM0_SC &= ~FTM_SC_TOF_MASK;
 
 	// Toggle clk
 	GPIOC_PTOR |= (1<<1);
-	camera->clkval = ~(camera->clkval);
-
-    // Handle on ADC value
-    uint16_t adcval = camera.adc->regs->RA;
+	camera.clkval = ~(camera.clkval);
 
 	// Line capture logic
-	if ((camera->pixcnt >= 2) && (camera->pixcnt < 256)) {
-		if (!camera->clkval) {	// check for falling edge
+	if ((camera.pixcnt >= 2) && (camera.pixcnt < 256)) {
+		if (!camera.clkval) {	// check for falling edge
 			// ADC read (note that integer division is 
 			//  occurring here for indexing the array)
-			camera->scan[camera->pixcnt/2] = adcval;
+			camera.scan[camera.pixcnt/2] = adcval;
 		}
-		camera->pixcnt += 1;
-	} else if (camera->pixcnt < 2) {
-		if (camera->pixcnt == -1) {
+		camera.pixcnt += 1;
+	} else if (camera.pixcnt < 2) {
+		if (camera.pixcnt == -1) {
 			GPIOB_PSOR |= (1 << 23); // SI = 1
-		} else if (camera->pixcnt == 1) {
+		} else if (camera.pixcnt == 1) {
 			GPIOB_PCOR |= (1 << 23); // SI = 0
 			// ADC read
-			camera->scan[0] = adcval;
+			camera.scan[0] = adcval;
 		} 
-		camera->pixcnt += 1;
+		camera.pixcnt += 1;
 	} else {
 		GPIOC_PCOR |= (1 << 1); // CLK = 0
-		camera->clkval = 0; // make sure clock variable = 0
-		camera->pixcnt = -2; // reset counter
+		camera.clkval = 0; // make sure clock variable = 0
+		camera.pixcnt = -2; // reset counter
 		// Disable FTM2 interrupts (until PIT0 overflows
 		//   again and triggers another line capture)
 		FTM0_SC &= ~(FTM_SC_TOIE_MASK);
@@ -83,10 +84,10 @@ void ADC0_IRQHandler(void) {
 *		interrupts to control when the line capture occurs
 */
 void PIT0_IRQHandler(void){
-	if (debugcamdata) {
+	if (DEBUG_CAM) {
 		// Increment capture counter so that we can only 
 		//	send line data once every ~2 seconds
-		camera->capcnt += 1;
+		camera.capcnt += 1;
 	}
 	// Clear interrupt
 	PIT_TFLG0 |= PIT_TFLG_TIF_MASK;

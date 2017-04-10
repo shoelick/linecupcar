@@ -413,7 +413,47 @@
       </TargetOption>
       <Groups>
         <Group>
-          <GroupName>Source Group 1</GroupName>
+          <GroupName>inc</GroupName>
+          <Files>
+            <File>
+              <FileName>ftm_driver.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\inc\ftm_driver.h</FilePath>
+            </File>
+            <File>
+              <FileName>linescan_driver.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\inc\linescan_driver.h</FilePath>
+            </File>
+            <File>
+              <FileName>adc_driver.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\inc\adc_driver.h</FilePath>
+            </File>
+            <File>
+              <FileName>camera_driver.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\inc\camera_driver.h</FilePath>
+            </File>
+            <File>
+              <FileName>pit_driver.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\inc\pit_driver.h</FilePath>
+            </File>
+            <File>
+              <FileName>uart.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\inc\uart.h</FilePath>
+            </File>
+            <File>
+              <FileName>main.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\inc\main.h</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>src</GroupName>
           <GroupOption>
             <CommonProperty>
               <UseCPPCompiler>0</UseCPPCompiler>
@@ -480,6 +520,11 @@
           </GroupOption>
           <Files>
             <File>
+              <FileName>isr.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\src\isr.c</FilePath>
+            </File>
+            <File>
               <FileName>adc_driver.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\src\adc_driver.c</FilePath>
@@ -487,7 +532,7 @@
             <File>
               <FileName>test.c</FileName>
               <FileType>1</FileType>
-              <FilePath>.\test.c</FilePath>
+              <FilePath>..\src\test.c</FilePath>
               <FileOption>
                 <CommonProperty>
                   <UseCPPCompiler>2</UseCPPCompiler>
@@ -537,29 +582,9 @@
               </FileOption>
             </File>
             <File>
-              <FileName>adc_driver.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\inc\adc_driver.h</FilePath>
-            </File>
-            <File>
-              <FileName>linescan_driver.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\inc\linescan_driver.h</FilePath>
-            </File>
-            <File>
-              <FileName>ftm_driver.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\inc\ftm_driver.h</FilePath>
-            </File>
-            <File>
-              <FileName>ftm_driver.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\src\ftm_driver.c</FilePath>
-            </File>
-            <File>
               <FileName>main.c</FileName>
               <FileType>1</FileType>
-              <FilePath>.\main.c</FilePath>
+              <FilePath>..\src\main.c</FilePath>
               <FileOption>
                 <CommonProperty>
                   <UseCPPCompiler>2</UseCPPCompiler>
@@ -567,7 +592,7 @@
                   <RVCTZI>0</RVCTZI>
                   <RVCTOtherData>0</RVCTOtherData>
                   <ModuleSelection>0</ModuleSelection>
-                  <IncludeInBuild>1</IncludeInBuild>
+                  <IncludeInBuild>2</IncludeInBuild>
                   <AlwaysBuild>2</AlwaysBuild>
                   <GenerateAssemblyFile>2</GenerateAssemblyFile>
                   <AssembleAssemblyFile>2</AssembleAssemblyFile>
@@ -602,21 +627,26 @@
                       <MiscControls></MiscControls>
                       <Define></Define>
                       <Undefine></Undefine>
-                      <IncludePath></IncludePath>
+                      <IncludePath>..\inc</IncludePath>
                     </VariousControls>
                   </Cads>
                 </FileArmAds>
               </FileOption>
             </File>
             <File>
-              <FileName>isr.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\src\isr.c</FilePath>
-            </File>
-            <File>
               <FileName>pit_driver.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\src\pit_driver.c</FilePath>
+            </File>
+            <File>
+              <FileName>ftm_driver.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\src\ftm_driver.c</FilePath>
+            </File>
+            <File>
+              <FileName>uart.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\src\uart.c</FilePath>
             </File>
           </Files>
         </Group>

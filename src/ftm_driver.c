@@ -1,10 +1,11 @@
 
 
 #include "MK64F12.h"
+#include "main.h"
 #include <math.h>
+#include <stdio.h>
 #include "ftm_driver.h"
-
-#define DEFAULT_SYSTEM_CLOCK 20485760U
+#include "uart.h"
 
 int ftm_init(ftm_driver *drv, int num){
 
@@ -106,7 +107,7 @@ void ftm_enable_pwm(ftm_driver *drv, int ch) {
 }
 
 void ftm_set_frequency(ftm_driver *drv, int prescaler, int freq) {
-
+	
     // Disable Write Protection
     ftm_enable_wr(drv);
 
@@ -114,16 +115,18 @@ void ftm_set_frequency(ftm_driver *drv, int prescaler, int freq) {
     drv->regs->SC &= ~FTM_SC_PS_MASK;
     drv->regs->SC |= FTM_SC_PS(prescaler);
 
-    prescaler = (int) powl(2,prescaler);
-
+	  // Calculate corresponding mod value
+    prescaler = pow(2,prescaler);
+	
     // Set the mod value according to the desired frequency
     drv->regs->CNT = 0;
-
     drv->regs->MOD = DEFAULT_SYSTEM_CLOCK / prescaler / freq;
-
+		
     // Enable write protection
     ftm_disable_wr(drv);
 
+		// Allow mod value to get latched in
+		delay(1);
 }
 
 void ftm_set_duty(ftm_driver *drv, int ch, double duty) {

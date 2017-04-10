@@ -29,21 +29,19 @@
  *****************************************************************************/
 
 #include "MK64F12.h"
+#include "main.h"
 #include "ftm_driver.h"
 #include "adc_driver.h"
 #include "pit_driver.h"
 #include "camera_driver.h"
+#include <stdio.h>
 #include "stdlib.h"
+#include <string.h>
 #include "uart.h"
-
-#define DEFAULT_SYSTEM_CLOCK    20485760U
-#define DEBUG_CAM               1
 
 /* Camera debugging */
 camera_driver camera;
 char str[100];
-
-void delay(int del);
 
 int main() {
 
@@ -52,6 +50,8 @@ int main() {
      **************************************************************************/
     ftm_driver dc_ftm, servo_ftm, camera_ftm;
     adc_driver adc;
+	
+	  int i;
 
     /* Set camera struct valus */
     camera.pixcnt = 0;
@@ -77,13 +77,21 @@ int main() {
     // GPIO camera clk, SI
     PORTC_PCR0 = PORT_PCR_MUX(1); // CLK
     PORTC_PCR4 = PORT_PCR_MUX(1); // SI
-	GPIOC_PDDR |= (1 << 0); // Set output
-	GPIOC_PDDR |= (1 << 4);
-	GPIOB_PSOR |= (1 << 0); // Set default value
-	GPIOB_PSOR |= (1 << 4);
+	  GPIOC_PDDR |= (1 << 0); // Set output
+	  GPIOC_PDDR |= (1 << 4);
+	  GPIOB_PSOR |= (1 << 0); // Set default value
+	  GPIOB_PSOR |= (1 << 4);
+
+    // Initialize uart for debugging
+    uart_init();
+
+		sprintf(str, "MOD: %d C0V: %d \r\n", dc_ftm.regs->MOD, \
+			dc_ftm.regs->CONTROLS[0].CnV);
+		uart_put(str);
 
     // Configure DC FTM
     ftm_init(&dc_ftm, 3); /* use ftm3 for dc motors */
+		
     ftm_set_frequency(&dc_ftm, 0, 10000);
     ftm_enable_pwm(&dc_ftm, 0);
     ftm_enable_pwm(&dc_ftm, 1);
@@ -99,47 +107,55 @@ int main() {
     ftm_enable_int(&servo_ftm);
 
     // Configure camera FTM
-    ftm_init(&camera_ftm, 0);
-
-    // Initialize uart for debugging
-    uart_init();
+    //ftm_init(&camera_ftm, 0);
 
     // Configure camera ADC
-    adc_init(&adc, 0);
+    //adc_init(&adc, 0);
 
     // Set up PIT 
-    init_PIT();
+    //init_PIT();
 
     // Enable FTM interrupts now that everything else is ready
-    ftm_enable_int(&camera_ftm);
+    //ftm_enable_int(&camera_ftm);
 
     /***************************************************************************
      * LOOP
      **************************************************************************/
+		 //dc_ftm.regs->MOD = 0x800;
+		 //dc_ftm.regs->CONTROLS[0].CnV = 0x666;
+		sprintf(str, "Entering loop with MOD: %d C0V: %d \r\n", dc_ftm.regs->MOD, \
+		dc_ftm.regs->CONTROLS[0].CnV);
+		uart_put(str);
+		 
     while (1) {
+			
+			/*sprintf(str, "MOD: %d C0V: %d \r\n", dc_ftm.regs->MOD, \
+				dc_ftm.regs->CONTROLS[0].CnV);
+			uart_put(str);
+			delay(10);*/
 
-		if (DEBUG_CAM) { // Every 2 seconds
-			//if (capcnt >= (2/INTEGRATION_TIME)) {
-			if (camera->capcnt >= (500)) {
-                // Set SI
-				GPIO4_PCOR |= (1 << 4);
-				// send the array over uart
-				sprintf(str,"%i\n\r",-1); // start value
-				uart_put(str);
-				for (i = 0; i < 127; i++) {
-					sprintf(str,"%i\r\n", line[i]);
+			if (DEBUG_CAM) { // Every 2 seconds
+				//if (capcnt >= (2/INTEGRATION_TIME)) {
+				if (camera.capcnt >= (500)) {
+									// Set SI
+					GPIOC_PCOR |= (1 << 4);
+					// send the array over uart
+					sprintf(str,"%i\n\r",-1); // start value
 					uart_put(str);
+					for (i = 0; i < 127; i++) {
+						sprintf(str,"%i\r\n", camera.scan[i]);
+						uart_put(str);
+					}
+					sprintf(str,"%i\n\r",-2); // end value
+					uart_put(str);
+					camera.capcnt = 0;
+					GPIOC_PSOR |= (1 << 4);
 				}
-				sprintf(str,"%i\n\r",-2); // end value
-				uart_put(str);
-				camera->capcnt = 0;
-				GPIOC_PSOR |= (1 << 4);
 			}
-		}
-
-	} //for
-
-    }
+			
+			
+			continue;
+	}
 }
 
 void delay(int del){
