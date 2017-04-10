@@ -8,27 +8,33 @@
 #define FTM_ERR_INIT 1
 
 /* Default System clock value */
-#define DEFAULT_SYSTEM_CLOCK 20485760u 
 #define DEFAULT_MOD 				 32768
 #define DEFAULT_CNV					 128 
 
 typedef struct ftm_driver {
     FTM_Type *regs;
     IRQn_Type irqn;
-		int mod;
-	  int duty;
+	  double duty[7];
 } ftm_driver;
 
 int ftm_init(ftm_driver *drv, int num);
 void ftm_enable_int(ftm_driver *drv);
 void ftm_disable_int(ftm_driver *drv);
 
+void ftm_enable_wr(ftm_driver *drv);
+void ftm_disable_wr(ftm_driver *drv);
+
+void ftm_enable_pwm(ftm_driver *drv, int ch);
+
 /*
  * Sets the frequency of the FTM interrupts based on the system clock.
  * You must calculate what to use as clock prescaler and multiplier of 
  * prescaler.
+ *
+ * Remember that compute the necessary prescaler depending on how high you 
+ * have to count. Counter max is 65536.
  */ 
-void ftm_set_frequency(ftm_driver *drv, int ch, int prescaler, int mult);
+void ftm_set_frequency(ftm_driver *drv, int prescaler, int freq);
 
 /*
  * Sets the duty cycle based on the set frequency.
