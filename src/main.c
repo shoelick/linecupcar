@@ -18,8 +18,8 @@
  * 	    Starboard motor PWM -------- PTD0  (FTM3_CH0)
  *		Port motor PWM ------------- PTD1  (FTM3_CH1)
  * 	    Servo PWM ------------------ PTB18 (FTM2_CH0)
- *		Camera CLK ----------------- PTC1  (FTM0_CH0)
- *		Camera SI ------------------ PTC4	 (GPIO)
+ *		Camera CLK ----------------- PTC1  (GPIO)
+ *		Camera SI ------------------ PTC4  (GPIO)
  *		Camera Analog Out ---------- ADC0_DP0
  *		Pushbutton ----------------- PTC6
  *		LED	(Red) ------------------ PTB22
@@ -32,9 +32,16 @@
 #include "ftm_driver.h"
 #include "adc_driver.h"
 #include "pit_driver.h"
+#include "camera_driver.h"
 #include "stdlib.h"
+#include "uart.h"
 
-#define DEFAULT_SYSTEM_CLOCK 20485760U
+#define DEFAULT_SYSTEM_CLOCK    20485760U
+#define DEBUG_CAM               1
+
+/* Camera debugging */
+camera_driver camera;
+char str[100];
 
 void delay(int del);
 
@@ -45,6 +52,14 @@ int main() {
      **************************************************************************/
     ftm_driver dc_ftm, servo_ftm, camera_ftm;
     adc_driver adc;
+
+    /* Set camera struct valus */
+    camera.pixcnt = 0;
+    camera.capcnt = 0;
+    memset(camera.scan, 0, sizeof(camera.scan));
+    camera.clkval = 0;
+    camera.ftm = &camera_ftm;
+    camera.adc = &adc;
 
     /***************************************************************************
      * CONFIGURATION
@@ -58,11 +73,18 @@ int main() {
     PORTD_PCR0 = PORT_PCR_MUX(4) | PORT_PCR_DSE_MASK;
     PORTD_PCR1 = PORT_PCR_MUX(4) | PORT_PCR_DSE_MASK;
     PORTB_PCR18 = PORT_PCR_MUX(3) | PORT_PCR_DSE_MASK;
-    PORTC_PCR0 = PORT_PCR_MUX(4) | PORT_PCR_DSE_MASK;
+
+    // GPIO camera clk, SI
+    PORTC_PCR0 = PORT_PCR_MUX(1); // CLK
+    PORTC_PCR4 = PORT_PCR_MUX(1); // SI
+	GPIOC_PDDR |= (1 << 0); // Set output
+	GPIOC_PDDR |= (1 << 4);
+	GPIOB_PSOR |= (1 << 0); // Set default value
+	GPIOB_PSOR |= (1 << 4);
 
     // Configure DC FTM
     ftm_init(&dc_ftm, 3); /* use ftm3 for dc motors */
-    ftm_set_frequency(&dc_ftm, 0, 1000);
+    ftm_set_frequency(&dc_ftm, 0, 10000);
     ftm_enable_pwm(&dc_ftm, 0);
     ftm_enable_pwm(&dc_ftm, 1);
     ftm_set_duty(&dc_ftm, 0, 0.2);
@@ -71,7 +93,7 @@ int main() {
 
     // Configure Servo FTM
     ftm_init(&servo_ftm, 2);
-    ftm_set_frequency(&servo_ftm, 4, 50);
+    ftm_set_frequency(&servo_ftm, 3, 50);
     ftm_enable_pwm(&servo_ftm, 0);
     ftm_set_duty(&servo_ftm, 0, 0.2);
     ftm_enable_int(&servo_ftm);
@@ -79,17 +101,43 @@ int main() {
     // Configure camera FTM
     ftm_init(&camera_ftm, 0);
 
+    // Initialize uart for debugging
+    uart_init();
+
+    // Configure camera ADC
+    adc_init(&adc, 0);
+
     // Set up PIT 
     init_PIT();
 
-    // Configure camera ADC
+    // Enable FTM interrupts now that everything else is ready
+    ftm_enable_int(&camera_ftm);
 
     /***************************************************************************
      * LOOP
      **************************************************************************/
     while (1) {
 
+		if (DEBUG_CAM) { // Every 2 seconds
+			//if (capcnt >= (2/INTEGRATION_TIME)) {
+			if (camera->capcnt >= (500)) {
+                // Set SI
+				GPIO4_PCOR |= (1 << 4);
+				// send the array over uart
+				sprintf(str,"%i\n\r",-1); // start value
+				uart_put(str);
+				for (i = 0; i < 127; i++) {
+					sprintf(str,"%i\r\n", line[i]);
+					uart_put(str);
+				}
+				sprintf(str,"%i\n\r",-2); // end value
+				uart_put(str);
+				camera->capcnt = 0;
+				GPIOC_PSOR |= (1 << 4);
+			}
+		}
 
+	} //for
 
     }
 }

@@ -1,0 +1,10 @@
+typedef struct camera_driver {
+    int pixcnt;
+    int capcnt;
+    int scan[128];
+    int clkval;
+    ftm_driver *ftm;
+    adc_driver *adc;
+} camera_driver;
+
+extern camera_driver camera;
