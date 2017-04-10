@@ -56,9 +56,6 @@ int adc_init(adc_driver *driver, int adc_num) {
 			calib += driver->regs->CLP2;
 			calib = calib >> 1; calib |= 0x8000;
 			driver->regs->PG = calib;
-
-			// Select hardware trigger.
-			driver->regs->SC2 |= ADC_SC2_ADTRG_MASK;
 					
 			// Set to single ended mode	
 			driver->regs->SC1[0] |= ADC_SC1_AIEN_MASK; 
@@ -74,6 +71,17 @@ void adc_enable_int(adc_driver *driver) {
 	
 		// Enable NVIC interrupt
 		NVIC_EnableIRQ(driver->irqn);
+}
+
+void adc_set_ftm0_trig(adc_driver *driver) {
+	
+			// Select hardware trigger.
+			driver->regs->SC2 |= ADC_SC2_ADTRG_MASK;
+	
+			/* Enable ADC0 Alternative Trigger is FTM0 */
+			SIM_SOPT7 |= SIM_SOPT7_ADC0TRGSEL(ADC_TRGSEL_FTM0);
+			SIM_SOPT7 |= SIM_SOPT7_ADC0ALTTRGEN_MASK;
+			SIM_SOPT7 &= ~(SIM_SOPT7_ADC0PRETRGSEL_MASK); // Pretrigger A
 }
 
 uint32_t adc_get_data(adc_driver *driver) {

@@ -33,9 +33,9 @@ void FTM0_IRQHandler(void){ //For FTM timer
 		camera.pixcnt += 1;
 	} else if (camera.pixcnt < 2) {
 		if (camera.pixcnt == -1) {
-			GPIOB_PSOR |= (1 << 23); // SI = 1
+			GPIOC_PSOR |= (1 << 4); // SI = 1
 		} else if (camera.pixcnt == 1) {
-			GPIOB_PCOR |= (1 << 23); // SI = 0
+			GPIOC_PCOR |= (1 << 4); // SI = 0
 			// ADC read
 			camera.scan[0] = adcval;
 		} 

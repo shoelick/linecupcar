@@ -47,4 +47,5 @@ void ftm_set_duty(ftm_driver *drv, int ch, double duty);
  * We use this to trigger ADC.
  */
 void ftm_enable_cntin_trig(ftm_driver *drv);
+
 #endif

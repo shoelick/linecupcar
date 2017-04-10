@@ -10,21 +10,21 @@
  * 	FTM0: Line scan using channel 5, drives clock and SI pulse
  * 	FTM2: Servo motor control, using channel 0
  * 	FTM3: DC Motor Control, using channels 0 and 1
- *		PIT0: Line scan camera -- triggers line scan 
- *   LED : Running state
- *		Pushbutton: Running control
+ *  PIT0: Line scan camera -- triggers line scan 
+ *  LED : Running state
+ *  Pushbutton: Running control
  *
  * -- Pins
- * 	    Starboard motor PWM -------- PTD0  (FTM3_CH0)
- *		Port motor PWM ------------- PTD1  (FTM3_CH1)
- * 	    Servo PWM ------------------ PTB18 (FTM2_CH0)
- *		Camera CLK ----------------- PTC1  (GPIO)
- *		Camera SI ------------------ PTC4  (GPIO)
- *		Camera Analog Out ---------- ADC0_DP0
- *		Pushbutton ----------------- PTC6
- *		LED	(Red) ------------------ PTB22
- *		LED	(Blue) ----------------- PTE26
- *		LED	(Green) ---------------- PTB21
+ * 	Starboard motor PWM -------- PTD0  (FTM3_CH0) [EXT]
+ *  Port motor PWM ------------- PTD1  (FTM3_CH1) [EXT]
+ *  Servo PWM ------------------ PTB18 (FTM2_CH0) [EXT]
+ *  Camera CLK ----------------- PTC1  (GPIO) [EXT]
+ *  Camera SI ------------------ PTC4  (GPIO) [EXT]
+ *  Camera Analog Out ---------- ADC0_DP0 [EXT]
+ *  Pushbutton ----------------- PTC6
+ *  LED	(Red) ------------------ PTB22
+ *  LED	(Blue) ----------------- PTE26
+ *  LED	(Green) ---------------- PTB21
  * 
  *****************************************************************************/
 
@@ -75,11 +75,11 @@ int main() {
     PORTB_PCR18 = PORT_PCR_MUX(3) | PORT_PCR_DSE_MASK;
 
     // GPIO camera clk, SI
-    PORTC_PCR0 = PORT_PCR_MUX(1); // CLK
+    PORTC_PCR1 = PORT_PCR_MUX(1); // CLK
     PORTC_PCR4 = PORT_PCR_MUX(1); // SI
-	  GPIOC_PDDR |= (1 << 0); // Set output
+	  GPIOC_PDDR |= (1 << 1); // Set output
 	  GPIOC_PDDR |= (1 << 4);
-	  GPIOB_PSOR |= (1 << 0); // Set default value
+	  GPIOB_PSOR |= (1 << 1); // Set default value
 	  GPIOB_PSOR |= (1 << 4);
 
     // Initialize uart for debugging
@@ -92,7 +92,7 @@ int main() {
     // Configure DC FTM
     ftm_init(&dc_ftm, 3); /* use ftm3 for dc motors */
 		
-    ftm_set_frequency(&dc_ftm, 0, 10000);
+    ftm_set_frequency(&dc_ftm, 0, 10e3);
     ftm_enable_pwm(&dc_ftm, 0);
     ftm_enable_pwm(&dc_ftm, 1);
     ftm_set_duty(&dc_ftm, 0, 0.2);
@@ -107,16 +107,20 @@ int main() {
     ftm_enable_int(&servo_ftm);
 
     // Configure camera FTM
-    //ftm_init(&camera_ftm, 0);
+    ftm_init(&camera_ftm, 0);
+		ftm_set_frequency(&camera_ftm, 0, DEFAULT_SYSTEM_CLOCK / 100);
+		ftm_enable_cntin_trig(&camera_ftm);
 
     // Configure camera ADC
-    //adc_init(&adc, 0);
+    adc_init(&adc, 0);
+		adc_enable_int(&adc);
+		adc_set_ftm0_trig(&adc);
 
     // Set up PIT 
-    //init_PIT();
+    init_PIT();
 
     // Enable FTM interrupts now that everything else is ready
-    //ftm_enable_int(&camera_ftm);
+    ftm_enable_int(&camera_ftm);
 
     /***************************************************************************
      * LOOP
@@ -153,8 +157,6 @@ int main() {
 				}
 			}
 			
-			
-			continue;
 	}
 }
 

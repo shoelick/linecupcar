@@ -22,9 +22,8 @@ typedef struct adc_driver {
 
 /* Initializes an adc driver instance using the given number adc */
 int adc_init(adc_driver *driver, int adc_num);
-
 void adc_enable_int(adc_driver *driver);
-
 uint32_t adc_get_data(adc_driver *driver);
+void adc_set_ftm0_trig(adc_driver *driver);
 
 #endif
