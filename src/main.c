@@ -34,6 +34,7 @@
 /* System includes */
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
 #include <MK64F12.h>
 
 /* Project includes */
@@ -48,6 +49,7 @@
 
 char str[100]; /* This is used to print from everywhere */
 camera_driver camera; /* Externally defined for use in ISRs */
+double filtered[128];
 
 /* Macro to turn the setpoint into a servo duty */
 const double SERVO_MIN  = 0.06;
@@ -83,7 +85,7 @@ int main() {
     camera.clkval = 0;
     camera.ftm = &camera_ftm;
     camera.adc = &adc;
-		
+
     /***************************************************************************
      * CONFIGURATION
      **************************************************************************/
@@ -105,9 +107,9 @@ int main() {
     GPIOB_PSOR |= (1 << 1); // Set default value
     GPIOB_PSOR |= (1 << 4);
 
-		// Initialize the rest of the GPIO for buttons/LEDs
-		led_init();
-		button_init();
+    // Initialize the rest of the GPIO for buttons/LEDs
+    led_init();
+    button_init();
 
     // Initialize uart for debugging
     uart_init();
@@ -159,15 +161,49 @@ int main() {
         if (DEBUG_CAM) matlab_print();
 
         /* Do camera processing */
-        line_detected = 1;
+        if (camera->newscan) {
 
-        /* Compute error */
+            // Normalize input
+            normalize(camera->wbuffer, camera->wbuffer, 
+                    sizeof(camera->wbuffer));
 
-        
+            // Perform low pass for noise cleaning
+            convolve(camera->wbuffer, sizeof(camera->wbuffer), LOW_PASS, 
+                    sizeof(lowpass), filtered);
+
+            // Perform high pass for derivative 
+            // Put back into camera->wbuffer because we need two separate 
+            // buffers
+            convolve(filtered, sizeof(camera->wbuffer), LOW_PASS, 
+                    sizeof(lowpass), camera->wbuffer);
+
+            // Normalize derivative
+            normalize(filtered, camera->wbuffer, sizeof(camera->wbuffer));
+
+            // Threshold
+
+ 
+            // Find maximum groups
+
+
+            // Find line(s)
+            line_detected = 1;
+
+            // Allow a new scan
+            camera->newscan = 1;
+        }
+
+        /* Compute error and update setpoints */
+        if (line_detected) {
+
+
+
+        }
+
         if (running) {
 
             // update values 
-
+    
         } else {
 
             // slow down
@@ -175,10 +211,10 @@ int main() {
         }
 
         /* Motors Update */
-        //ftm_set_duty(&dc_ftm, CH_STARBOARD, s_throttle);
-        //ftm_set_duty(&dc_ftm, CH_PORT, p_throttle);
-        //ftm_set_duty(&servo_ftm, CH_SERVO, TO_SERVO_DUTY(steering));
-            
+        ftm_set_duty(&dc_ftm, CH_STARBOARD, s_throttle);
+        ftm_set_duty(&dc_ftm, CH_PORT, p_throttle);
+        ftm_set_duty(&servo_ftm, CH_SERVO, TO_SERVO_DUTY(steering));
+
         /* Update LED */
         if (light_elapsed >= LIGHT_INT) {
 
@@ -191,57 +227,42 @@ int main() {
             state_color = !state_color;
             light_elapsed = 0;
 
-        } else {
-            light_elapsed++;
-        }
+        } else light_elapsed++;
 
         /* Update state */
-				sw = sw_active();
+        sw = sw_active();
         if (sw && !button_held) {
 
             running = !running;
             button_held = 1;
 
-        } else if (!sw && button_held) {
-            button_held = 0;
-        } else {
-					continue;
-				}
+        } else if (!sw && button_held) button_held = 0;
     }
 }
 
-/*
- * Waste time 
- */
-void delay(int del){
-    int i;
-    for (i=0; i<del*50000; i++){
-        // Do nothing
-    }
-}
 
 /*
  * This function prints out camera values in a format expected by a listening 
  * matlab instance.
  */
 void matlab_print() {
-				int i;
+    int i;
 
-        //if (capcnt >= (2/INTEGRATION_TIME)) {
-        if (camera.capcnt >= (500)) {
-            // Set SI
-            GPIOC_PCOR |= (1 << 4);
-            // send the array over uart
-            sprintf(str,"%i\n\r",-1); // start value
+    //if (capcnt >= (2/INTEGRATION_TIME)) {
+    if (camera.capcnt >= (500)) {
+        // Set SI
+        GPIOC_PCOR |= (1 << 4);
+        // send the array over uart
+        sprintf(str,"%i\n\r",-1); // start value
+        uart_put(str);
+        for (i = 0; i < 127; i++) {
+            sprintf(str,"%i\r\n", camera.scan[i]);
             uart_put(str);
-            for (i = 0; i < 127; i++) {
-                sprintf(str,"%i\r\n", camera.scan[i]);
-                uart_put(str);
-            }
-            sprintf(str,"%i\n\r",-2); // end value
-            uart_put(str);
-            camera.capcnt = 0;
-            GPIOC_PSOR |= (1 << 4);
         }
+        sprintf(str,"%i\n\r",-2); // end value
+        uart_put(str);
+        camera.capcnt = 0;
+        GPIOC_PSOR |= (1 << 4);
     }
+}
 

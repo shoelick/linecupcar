@@ -41,6 +41,7 @@ void FTM0_IRQHandler(void){ //For FTM timer
 		} 
 		camera.pixcnt += 1;
 	} else {
+        
 		GPIOC_PCOR |= (1 << 1); // CLK = 0
 		camera.clkval = 0; // make sure clock variable = 0
 		camera.pixcnt = -2; // reset counter
@@ -91,7 +92,13 @@ void PIT0_IRQHandler(void){
 	}
 	// Clear interrupt
 	PIT_TFLG0 |= PIT_TFLG_TIF_MASK;
-	
+
+    /* Only move new scan into working buffer if existing scan is unprocessed */
+    if (!newscan) {
+        memcpy(camera->wbuffer, camera->line, sizeof(camera->line));
+        camera->newscan = 1;
+    }
+
 	// Setting mod resets the FTM counter
 	FTM0_MOD = FTM0_MOD;
 	
