@@ -174,19 +174,34 @@ int main() {
             // Perform high pass for derivative 
             // Put back into camera->wbuffer because we need two separate 
             // buffers
-            convolve(normalized, SCAN_LEN, LOW_PASS, SCAN_LEN, filtered);
+            convolve(normalized, SCAN_LEN, HIGH_PASS, 3, filtered);
 
             // Normalize derivative
             d_normalize(filtered, filtered, sizeof(camera.wbuffer));
 
             // Threshold
-
+            sthreshold(filtered, SCAN_LEN, FILTERED, 0.5); 
  
             // Find maximum groups
+            if (count_lines(filtered, SCAN_LEN) > 1) {
 
+                // Check for finish line 
 
-            // Find line(s)
-            line_detected = 1;
+                // Try to find left line
+                
+                // Try to find right line
+                
+                // If we have both, find center
+                
+                // Otherwise, hug the one we have
+
+                // we found lines 
+                line_detected = 1;
+            } else {
+                line_detected = 0;
+
+                // TODO: Keep track of time we haven't seen a line 
+            }
 
             // Allow a new scan
             camera.newscan = 1;

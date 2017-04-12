@@ -5,6 +5,7 @@
 
 #include <stddef.h>
 #include <stdio.h>
+#include <util.h>
 
 const double HIGH_PASS[] = {-1.0, 0, 1.0};
 const double LOW_PASS[] = {1.0/3.0, 1.0/3.0, 1.0/3.0};
@@ -94,6 +95,56 @@ void threshold(int *dest, const double const* data, size_t n, double threshold)
         dest[i] = (data[i] > threshold) ? 1 : 0;
     }
 }
+
+/*
+ * Signed threshold
+ * Thresholds the double-array by the given threshold value. 
+ * Puts 1s in the destination array where data[i] >= threshold, 
+ * -1s in the dest array where data[i] <= -threshold, and 
+ * 0s otherwise.
+ */
+void sthreshold(int *dest, const double const* data, size_t n, double threshold) 
+{
+    int i;
+    for (i = 0; i < n; i++ ) {
+        if (data[i] > threshold) dest[i] = 1;
+        else if (data[i] < -1 * threshold) dest[i] = -1;
+        else dest[i] = 0;
+    }
+}
+
+/*
+ * Takes in the signed threshold'd data and counts the detected black line 
+ * blobs.
+ */
+int count_lines(int *data, size_t len) {
+
+    int count, i;
+    uint8_t found_line = 0;
+    for (i = 0; i < len; i++) {
+
+        /* End of line blob */
+        if (data[i] == LINE_END) {
+
+            /* If we're only catch the end of the line, increment */
+            if (!found_line) {
+                count++;
+            } else {
+                found_line = 0;
+            }
+        } 
+        /* Start of line blob */
+        else if (data[i] == LINE_START && !found_line) {
+            found_line = 1;
+            count++;
+        }
+    }
+
+    return count;
+}
+
+
+
 
 /*
  * Waste time 

@@ -8,6 +8,9 @@
 extern const double HIGH_PASS[];
 extern const double LOW_PASS[];
 
+#define LINE_START 1
+#define LINE_STOP -1
+
 /*
  * Performs convolution data * kernel
  * Stores output in the array pointed to by result.
@@ -27,6 +30,30 @@ void i_normalize(double *dest, const int *data, const size_t len);
  * Takes array of doubles, produces array of doubles.
  */
 void d_normalize(double *dest, const double *data, const size_t len);
+
+/*
+ * Thresholding function
+ * Prouduces integer arrays of thresholded data based on passed threshold.
+ * sthreshold allows for signed thresholding.
+ */
+void threshold(int *dest, const double const* data, size_t n, double threshold);
+void sthreshold(int *dest, const double const* data, size_t n, 
+        double threshold); 
+
+/*
+ * Count the number of line blobs in the passed array.
+ */
+int count_lines(int *data, size_t len);
+
+/*
+ * Find leftmost line blob
+ */
+int find_left_line(int *data, size_t len);
+
+/*
+ * Find rightmost line blob
+ */
+int find_right_line(int *data, size_t len);
 
 /* 
  * Wastes an unspecificed amount of time
