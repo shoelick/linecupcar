@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include "ftm_driver.h"
 #include "uart.h"
+#include "util.h"
 
 int ftm_init(ftm_driver *drv, int num){
 

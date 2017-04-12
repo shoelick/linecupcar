@@ -82,47 +82,47 @@
         <Book>
           <Number>0</Number>
           <Title>KoalaEVM Quick Start (Koala EVM)</Title>
-          <Path>C:\Keil_v515\ARM\PACK\Clarinox\Wireless\2.0.1\Docs\KoalaEVM_QuickStart.pdf</Path>
+          <Path>C:\Keil_v5\ARM\PACK\Clarinox\Wireless\2.0.1\Docs\KoalaEVM_QuickStart.pdf</Path>
         </Book>
         <Book>
           <Number>1</Number>
           <Title>KoalaEVM Applications Manual (Koala EVM)</Title>
-          <Path>C:\Keil_v515\ARM\PACK\Clarinox\Wireless\2.0.1\Docs\KoalaEVM_SoftwareApplications.pdf</Path>
+          <Path>C:\Keil_v5\ARM\PACK\Clarinox\Wireless\2.0.1\Docs\KoalaEVM_SoftwareApplications.pdf</Path>
         </Book>
         <Book>
           <Number>2</Number>
           <Title>FRDM-K64F Schematics (FRDM-K64F)</Title>
-          <Path>C:\Keil_v515\ARM\PACK\Keil\Kinetis_K60_DFP\1.4.0\Documents\FRDM-K64F_SCH.pdf</Path>
+          <Path>C:\Keil_v5\ARM\PACK\Keil\Kinetis_K60_DFP\1.4.0\Documents\FRDM-K64F_SCH.pdf</Path>
         </Book>
         <Book>
           <Number>3</Number>
           <Title>User Manual (FRDM-K64F)</Title>
-          <Path>C:\Keil_v515\ARM\PACK\Keil\Kinetis_K60_DFP\1.4.0\Documents\FRDMK64FUG.pdf</Path>
+          <Path>C:\Keil_v5\ARM\PACK\Keil\Kinetis_K60_DFP\1.4.0\Documents\FRDMK64FUG.pdf</Path>
         </Book>
         <Book>
           <Number>4</Number>
           <Title>Quick Start Guide (FRDM-K64F)</Title>
-          <Path>C:\Keil_v515\ARM\PACK\Keil\Kinetis_K60_DFP\1.4.0\Documents\FRDMK64QSG.pdf</Path>
+          <Path>C:\Keil_v5\ARM\PACK\Keil\Kinetis_K60_DFP\1.4.0\Documents\FRDMK64QSG.pdf</Path>
         </Book>
         <Book>
           <Number>5</Number>
           <Title>Quick Start Guide (TWR-K60D100M)</Title>
-          <Path>C:\Keil_v515\ARM\PACK\Keil\Kinetis_K60_DFP\1.4.0\Documents\TWR-K60D100MQSG.pdf</Path>
+          <Path>C:\Keil_v5\ARM\PACK\Keil\Kinetis_K60_DFP\1.4.0\Documents\TWR-K60D100MQSG.pdf</Path>
         </Book>
         <Book>
           <Number>6</Number>
           <Title>Schematic (TWR-K60D100M)</Title>
-          <Path>C:\Keil_v515\ARM\PACK\Keil\Kinetis_K60_DFP\1.4.0\Documents\TWR-K60D100M_SCH.pdf</Path>
+          <Path>C:\Keil_v5\ARM\PACK\Keil\Kinetis_K60_DFP\1.4.0\Documents\TWR-K60D100M_SCH.pdf</Path>
         </Book>
         <Book>
           <Number>7</Number>
           <Title>User Manual (TWR-K60D100M)</Title>
-          <Path>C:\Keil_v515\ARM\PACK\Keil\Kinetis_K60_DFP\1.4.0\Documents\TWRK60D100MUM.pdf</Path>
+          <Path>C:\Keil_v5\ARM\PACK\Keil\Kinetis_K60_DFP\1.4.0\Documents\TWRK60D100MUM.pdf</Path>
         </Book>
         <Book>
           <Number>8</Number>
           <Title>Quick Start Guide (TWR-K64F120M)</Title>
-          <Path>C:\Keil_v515\ARM\PACK\Keil\Kinetis_K60_DFP\1.4.0\Documents\TWRK64FQSG.pdf</Path>
+          <Path>C:\Keil_v5\ARM\PACK\Keil\Kinetis_K60_DFP\1.4.0\Documents\TWRK64FQSG.pdf</Path>
         </Book>
         <Book>
           <Number>9</Number>
@@ -232,7 +232,7 @@
         <Bp>
           <Number>1</Number>
           <Type>0</Type>
-          <LineNumber>201</LineNumber>
+          <LineNumber>163</LineNumber>
           <EnabledFlag>1</EnabledFlag>
           <Address>0</Address>
           <ByteObject>0</ByteObject>
@@ -408,6 +408,19 @@
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
     </File>
+    <File>
+      <GroupNumber>1</GroupNumber>
+      <FileNumber>9</FileNumber>
+      <FileType>5</FileType>
+      <tvExp>0</tvExp>
+      <Focus>0</Focus>
+      <tvExpOptDlg>0</tvExpOptDlg>
+      <bDave2>0</bDave2>
+      <PathWithFileName>..\inc\util.h</PathWithFileName>
+      <FilenameWithoutPath>util.h</FilenameWithoutPath>
+      <RteFlg>0</RteFlg>
+      <bShared>0</bShared>
+    </File>
   </Group>
 
   <Group>
@@ -418,7 +431,7 @@
     <RteFlg>0</RteFlg>
     <File>
       <GroupNumber>2</GroupNumber>
-      <FileNumber>9</FileNumber>
+      <FileNumber>10</FileNumber>
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
@@ -431,7 +444,7 @@
     </File>
     <File>
       <GroupNumber>2</GroupNumber>
-      <FileNumber>10</FileNumber>
+      <FileNumber>11</FileNumber>
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
@@ -444,7 +457,7 @@
     </File>
     <File>
       <GroupNumber>2</GroupNumber>
-      <FileNumber>11</FileNumber>
+      <FileNumber>12</FileNumber>
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
@@ -457,7 +470,7 @@
     </File>
     <File>
       <GroupNumber>2</GroupNumber>
-      <FileNumber>12</FileNumber>
+      <FileNumber>13</FileNumber>
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
@@ -470,7 +483,7 @@
     </File>
     <File>
       <GroupNumber>2</GroupNumber>
-      <FileNumber>13</FileNumber>
+      <FileNumber>14</FileNumber>
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
@@ -483,7 +496,7 @@
     </File>
     <File>
       <GroupNumber>2</GroupNumber>
-      <FileNumber>14</FileNumber>
+      <FileNumber>15</FileNumber>
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
@@ -496,7 +509,7 @@
     </File>
     <File>
       <GroupNumber>2</GroupNumber>
-      <FileNumber>15</FileNumber>
+      <FileNumber>16</FileNumber>
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
@@ -509,7 +522,7 @@
     </File>
     <File>
       <GroupNumber>2</GroupNumber>
-      <FileNumber>16</FileNumber>
+      <FileNumber>17</FileNumber>
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
@@ -522,7 +535,7 @@
     </File>
     <File>
       <GroupNumber>2</GroupNumber>
-      <FileNumber>17</FileNumber>
+      <FileNumber>18</FileNumber>
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
@@ -530,6 +543,19 @@
       <bDave2>0</bDave2>
       <PathWithFileName>..\src\gpio.c</PathWithFileName>
       <FilenameWithoutPath>gpio.c</FilenameWithoutPath>
+      <RteFlg>0</RteFlg>
+      <bShared>0</bShared>
+    </File>
+    <File>
+      <GroupNumber>2</GroupNumber>
+      <FileNumber>19</FileNumber>
+      <FileType>1</FileType>
+      <tvExp>0</tvExp>
+      <Focus>0</Focus>
+      <tvExpOptDlg>0</tvExpOptDlg>
+      <bDave2>0</bDave2>
+      <PathWithFileName>..\src\util.c</PathWithFileName>
+      <FilenameWithoutPath>util.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
     </File>

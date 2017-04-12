@@ -34,7 +34,6 @@
 /* System includes */
 #include <stdio.h>
 #include <string.h>
-#include <unistd.h>
 #include <MK64F12.h>
 
 /* Project includes */
@@ -46,10 +45,12 @@
 #include "camera_driver.h"
 #include "stdlib.h"
 #include "uart.h"
+#include "util.h"
 
 char str[100]; /* This is used to print from everywhere */
 camera_driver camera; /* Externally defined for use in ISRs */
-double filtered[128];
+double normalized[SCAN_LEN];
+double filtered[SCAN_LEN];
 
 /* Macro to turn the setpoint into a servo duty */
 const double SERVO_MIN  = 0.06;
@@ -161,24 +162,22 @@ int main() {
         if (DEBUG_CAM) matlab_print();
 
         /* Do camera processing */
-        if (camera->newscan) {
+        if (camera.newscan) {
 
             // Normalize input
-            normalize(camera->wbuffer, camera->wbuffer, 
-                    sizeof(camera->wbuffer));
+            i_normalize(normalized, camera.wbuffer, SCAN_LEN);
 
             // Perform low pass for noise cleaning
-            convolve(camera->wbuffer, sizeof(camera->wbuffer), LOW_PASS, 
-                    sizeof(lowpass), filtered);
+            convolve(normalized, sizeof(camera.wbuffer), LOW_PASS, 
+                    3, filtered);
 
             // Perform high pass for derivative 
             // Put back into camera->wbuffer because we need two separate 
             // buffers
-            convolve(filtered, sizeof(camera->wbuffer), LOW_PASS, 
-                    sizeof(lowpass), camera->wbuffer);
+            convolve(normalized, SCAN_LEN, LOW_PASS, SCAN_LEN, filtered);
 
             // Normalize derivative
-            normalize(filtered, camera->wbuffer, sizeof(camera->wbuffer));
+            d_normalize(filtered, filtered, sizeof(camera.wbuffer));
 
             // Threshold
 
@@ -190,7 +189,7 @@ int main() {
             line_detected = 1;
 
             // Allow a new scan
-            camera->newscan = 1;
+            camera.newscan = 1;
         }
 
         /* Compute error and update setpoints */
@@ -255,8 +254,8 @@ void matlab_print() {
         // send the array over uart
         sprintf(str,"%i\n\r",-1); // start value
         uart_put(str);
-        for (i = 0; i < 127; i++) {
-            sprintf(str,"%i\r\n", camera.scan[i]);
+        for (i = 0; i < SCAN_LEN; i++) {
+            sprintf(str,"%f\r\n", filtered[i]);
             uart_put(str);
         }
         sprintf(str,"%i\n\r",-2); // end value

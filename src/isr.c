@@ -1,12 +1,12 @@
 /*
  * This file will contain all interrupt handlers.
- * THIS FILE MUST BE MANUALLY UPDATED AS IT HAS NO HANDLE 
- * ON MAIN PROGRAM STATE.
  */
+
+#include <MK64F12.h>
+#include <string.h>
 
 #include "camera_driver.h"
 #include "main.h"
-#include "MK64F12.h"
 
 /*
  * Handles line scan FTM-driven interrupts
@@ -94,9 +94,9 @@ void PIT0_IRQHandler(void){
 	PIT_TFLG0 |= PIT_TFLG_TIF_MASK;
 
     /* Only move new scan into working buffer if existing scan is unprocessed */
-    if (!newscan) {
-        memcpy(camera->wbuffer, camera->line, sizeof(camera->line));
-        camera->newscan = 1;
+    if (!camera.newscan) {
+        memcpy(camera.wbuffer, camera.scan, sizeof(camera.scan));
+        camera.newscan = 1;
     }
 
 	// Setting mod resets the FTM counter
