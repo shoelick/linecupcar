@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 from math import *
 import matplotlib.pyplot as plt
 import numpy as np
@@ -13,6 +15,8 @@ derivcn = []
 
 for i in range(0, 360):
     data.append(sin(radians(i)))
+
+print(data)
 
 derivc = np.convolve(data, kernel)
 

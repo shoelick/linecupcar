@@ -3,6 +3,8 @@
  * Contains utilty functions and definitions
  */
 
+#include "stddef.h"
+
 extern const double HIGH_PASS[];
 extern const double LOW_PASS[];
 
@@ -10,8 +12,9 @@ extern const double LOW_PASS[];
  * Performs convolution data * kernel
  * Stores output in the array pointed to by result.
  */
-void convolve(const double *data, size_t datalen, const double *kernel, 
-        size_t kernellen, double *result);
+void convolve(double *result, const double *data, size_t datalen, 
+        const double *kernel, size_t kernellen);
+
 
 /* 
  * Normalizes the pass function to be betwen 0 and 1.0.
