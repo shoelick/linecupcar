@@ -82,47 +82,47 @@
         <Book>
           <Number>0</Number>
           <Title>KoalaEVM Quick Start (Koala EVM)</Title>
-          <Path>C:\Keil_v5\ARM\PACK\Clarinox\Wireless\2.0.1\Docs\KoalaEVM_QuickStart.pdf</Path>
+          <Path>C:\Keil_v515\ARM\PACK\Clarinox\Wireless\2.0.1\Docs\KoalaEVM_QuickStart.pdf</Path>
         </Book>
         <Book>
           <Number>1</Number>
           <Title>KoalaEVM Applications Manual (Koala EVM)</Title>
-          <Path>C:\Keil_v5\ARM\PACK\Clarinox\Wireless\2.0.1\Docs\KoalaEVM_SoftwareApplications.pdf</Path>
+          <Path>C:\Keil_v515\ARM\PACK\Clarinox\Wireless\2.0.1\Docs\KoalaEVM_SoftwareApplications.pdf</Path>
         </Book>
         <Book>
           <Number>2</Number>
           <Title>FRDM-K64F Schematics (FRDM-K64F)</Title>
-          <Path>C:\Keil_v5\ARM\PACK\Keil\Kinetis_K60_DFP\1.4.0\Documents\FRDM-K64F_SCH.pdf</Path>
+          <Path>C:\Keil_v515\ARM\PACK\Keil\Kinetis_K60_DFP\1.4.0\Documents\FRDM-K64F_SCH.pdf</Path>
         </Book>
         <Book>
           <Number>3</Number>
           <Title>User Manual (FRDM-K64F)</Title>
-          <Path>C:\Keil_v5\ARM\PACK\Keil\Kinetis_K60_DFP\1.4.0\Documents\FRDMK64FUG.pdf</Path>
+          <Path>C:\Keil_v515\ARM\PACK\Keil\Kinetis_K60_DFP\1.4.0\Documents\FRDMK64FUG.pdf</Path>
         </Book>
         <Book>
           <Number>4</Number>
           <Title>Quick Start Guide (FRDM-K64F)</Title>
-          <Path>C:\Keil_v5\ARM\PACK\Keil\Kinetis_K60_DFP\1.4.0\Documents\FRDMK64QSG.pdf</Path>
+          <Path>C:\Keil_v515\ARM\PACK\Keil\Kinetis_K60_DFP\1.4.0\Documents\FRDMK64QSG.pdf</Path>
         </Book>
         <Book>
           <Number>5</Number>
           <Title>Quick Start Guide (TWR-K60D100M)</Title>
-          <Path>C:\Keil_v5\ARM\PACK\Keil\Kinetis_K60_DFP\1.4.0\Documents\TWR-K60D100MQSG.pdf</Path>
+          <Path>C:\Keil_v515\ARM\PACK\Keil\Kinetis_K60_DFP\1.4.0\Documents\TWR-K60D100MQSG.pdf</Path>
         </Book>
         <Book>
           <Number>6</Number>
           <Title>Schematic (TWR-K60D100M)</Title>
-          <Path>C:\Keil_v5\ARM\PACK\Keil\Kinetis_K60_DFP\1.4.0\Documents\TWR-K60D100M_SCH.pdf</Path>
+          <Path>C:\Keil_v515\ARM\PACK\Keil\Kinetis_K60_DFP\1.4.0\Documents\TWR-K60D100M_SCH.pdf</Path>
         </Book>
         <Book>
           <Number>7</Number>
           <Title>User Manual (TWR-K60D100M)</Title>
-          <Path>C:\Keil_v5\ARM\PACK\Keil\Kinetis_K60_DFP\1.4.0\Documents\TWRK60D100MUM.pdf</Path>
+          <Path>C:\Keil_v515\ARM\PACK\Keil\Kinetis_K60_DFP\1.4.0\Documents\TWRK60D100MUM.pdf</Path>
         </Book>
         <Book>
           <Number>8</Number>
           <Title>Quick Start Guide (TWR-K64F120M)</Title>
-          <Path>C:\Keil_v5\ARM\PACK\Keil\Kinetis_K60_DFP\1.4.0\Documents\TWRK64FQSG.pdf</Path>
+          <Path>C:\Keil_v515\ARM\PACK\Keil\Kinetis_K60_DFP\1.4.0\Documents\TWRK64FQSG.pdf</Path>
         </Book>
         <Book>
           <Number>9</Number>
@@ -216,9 +216,9 @@
         <Bp>
           <Number>0</Number>
           <Type>0</Type>
-          <LineNumber>162</LineNumber>
+          <LineNumber>172</LineNumber>
           <EnabledFlag>1</EnabledFlag>
-          <Address>7414</Address>
+          <Address>8250</Address>
           <ByteObject>0</ByteObject>
           <HtxType>0</HtxType>
           <ManyObjects>0</ManyObjects>
@@ -227,40 +227,14 @@
           <BreakIfRCount>1</BreakIfRCount>
           <Filename>..\src\main.c</Filename>
           <ExecCommand></ExecCommand>
-          <Expression>\\linecupcar\../src/main.c\162</Expression>
-        </Bp>
-        <Bp>
-          <Number>1</Number>
-          <Type>0</Type>
-          <LineNumber>163</LineNumber>
-          <EnabledFlag>1</EnabledFlag>
-          <Address>0</Address>
-          <ByteObject>0</ByteObject>
-          <HtxType>0</HtxType>
-          <ManyObjects>0</ManyObjects>
-          <SizeOfObject>0</SizeOfObject>
-          <BreakByAccess>0</BreakByAccess>
-          <BreakIfRCount>0</BreakIfRCount>
-          <Filename>..\src\main.c</Filename>
-          <ExecCommand></ExecCommand>
-          <Expression></Expression>
+          <Expression>\\linecupcar\../src/main.c\172</Expression>
         </Bp>
       </Breakpoint>
       <WatchWindow1>
         <Ww>
           <count>0</count>
           <WinNumber>1</WinNumber>
-          <ItemText>drv-&gt;regs-&gt;MOD </ItemText>
-        </Ww>
-        <Ww>
-          <count>1</count>
-          <WinNumber>1</WinNumber>
-          <ItemText>duty</ItemText>
-        </Ww>
-        <Ww>
-          <count>2</count>
-          <WinNumber>1</WinNumber>
-          <ItemText>DEFAULT_SYSTEM_CLOCK </ItemText>
+          <ItemText>normalized[1]</ItemText>
         </Ww>
       </WatchWindow1>
       <Tracepoint>
@@ -295,12 +269,18 @@
       <LintExecutable></LintExecutable>
       <LintConfigFile></LintConfigFile>
       <bLintAuto>0</bLintAuto>
+      <SystemViewers>
+        <Entry>
+          <Name>System Viewer\FTM3</Name>
+          <WinId>35905</WinId>
+        </Entry>
+      </SystemViewers>
     </TargetOption>
   </Target>
 
   <Group>
     <GroupName>inc</GroupName>
-    <tvExp>1</tvExp>
+    <tvExp>0</tvExp>
     <tvExpOptDlg>0</tvExpOptDlg>
     <cbSel>0</cbSel>
     <RteFlg>0</RteFlg>

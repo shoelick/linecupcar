@@ -66,7 +66,7 @@ int ftm_init(ftm_driver *drv, int num){
         drv->regs->OUTINIT |= FTM_OUTINIT_CH0OI_MASK;
 
         // Set the Counter Initial Value to 0
-        drv->regs->CNTIN = 1;
+        drv->regs->CNTIN = 0;
 
         // Initialize the CNT to 0 before writing to MOD
         drv->regs->CNT = 0;
@@ -151,7 +151,10 @@ void ftm_set_mod(ftm_driver *drv, int prescaler, int mod) {
 }
 void ftm_set_duty(ftm_driver *drv, int ch, double duty) {
 
-    drv->regs->CONTROLS[ch].CnV = (int) ((double) (drv->regs->MOD)) * duty;
+		int cnv = ((double) (drv->regs->MOD)) * duty;
+		
+		// Don't allow a negative value
+		drv->regs->CONTROLS[ch].CnV = (cnv < 0) ? 0 : cnv;
 
 }
 

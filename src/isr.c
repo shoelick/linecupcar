@@ -8,13 +8,13 @@
 #include "camera_driver.h"
 #include "main.h"
 
+// ADC0VAL holds the current ADC value
+uint16_t ADC0VAL;
+
 /*
  * Handles line scan FTM-driven interrupts
  */
 void FTM0_IRQHandler(void){ //For FTM timer
-	
-	// Handle on ADC value
-	uint16_t adcval = camera.adc->regs->R[0];
 	
 	// Clear interrupt
 	FTM0_SC &= ~FTM_SC_TOF_MASK;
@@ -28,7 +28,7 @@ void FTM0_IRQHandler(void){ //For FTM timer
 		if (!camera.clkval) {	// check for falling edge
 			// ADC read (note that integer division is 
 			//  occurring here for indexing the array)
-			camera.scan[camera.pixcnt/2] = adcval;
+			camera.scan[camera.pixcnt/2] = ADC0VAL;
 		}
 		camera.pixcnt += 1;
 	} else if (camera.pixcnt < 2) {
@@ -37,7 +37,7 @@ void FTM0_IRQHandler(void){ //For FTM timer
 		} else if (camera.pixcnt == 1) {
 			GPIOC_PCOR |= (1 << 4); // SI = 0
 			// ADC read
-			camera.scan[0] = adcval;
+			camera.scan[0] = ADC0VAL;
 		} 
 		camera.pixcnt += 1;
 	} else {
@@ -74,7 +74,7 @@ void FTM3_IRQHandler(void){ //For FTM timer
 // ADC1 Conversion Complete ISR
 void ADC0_IRQHandler(void) {
     // Read the result (upper 12-bits). This also clears the Conversion complete flag.
-    unsigned short i = ADC0_RA >> 4;
+    ADC0VAL = ADC0_RA;
 }
 
 /* PIT0 determines the integration period
@@ -95,7 +95,7 @@ void PIT0_IRQHandler(void){
 
     /* Only move new scan into working buffer if existing scan is unprocessed */
     if (!camera.newscan) {
-        memcpy(camera.wbuffer, camera.scan, sizeof(camera.scan));
+        memcpy(camera.wbuffer, camera.scan, SCAN_LEN * sizeof(int));
         camera.newscan = 1;
     }
 

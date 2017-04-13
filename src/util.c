@@ -3,6 +3,7 @@
  * Utility functionality for signal processing and driving.
  */
 
+#include <math.h>
 #include <stdint.h>
 #include <stddef.h>
 #include <stdio.h>
@@ -39,7 +40,7 @@ void convolve(double *result, const double *data, size_t datalen,
 /*
  * Normalize the passed data to [0, 1.0]
  */
-void i_normalize(double *dest, const int *data, const size_t n) {
+void i_normalize(double *dest, int *data, const size_t n) {
 
     int i = 0, maxind = 0;
     double scale;
@@ -51,8 +52,6 @@ void i_normalize(double *dest, const int *data, const size_t n) {
 
     /* Use max at index and save a calculation */
     scale = 1.0 / data[maxind];
-    printf("Found max at [%d]: %i, scaling by %f\n", maxind, data[maxind], 
-            scale);
 
     /* Normalize */
     for (i = 0; i < n; i++) {
@@ -62,6 +61,7 @@ void i_normalize(double *dest, const int *data, const size_t n) {
 
 /*
  * Normalize the passed data to [0, 1.0]
+ * Uses the absolute value of any negative values
  */
 void d_normalize(double *dest, const double *data, const size_t n) {
 
@@ -70,17 +70,15 @@ void d_normalize(double *dest, const double *data, const size_t n) {
 
     /* Find index of the max */
     for (i = 1; i < n; i++) {
-        if (data[i] > data[maxind]) maxind = i;
+        if (fabs(data[i]) > fabs(data[maxind])) maxind = i;
     }
 
     /* Use max at index and save a calculation */
-    scale = 1.0 / data[maxind];
-    printf("Found max at [%d]: %f, scaling by %f\n", maxind, data[maxind], 
-            scale);
+    scale = 1.0 / fabs(data[maxind]);
 
     /* Normalize */
     for (i = 0; i < n; i++) {
-        dest[i] = data[i] * scale;
+        dest[i] = fabs(data[i]) * scale;
     }
 }
 
@@ -88,11 +86,15 @@ void d_normalize(double *dest, const double *data, const size_t n) {
  * Thresholds the double-array by the given threshold value. 
  * Puts 0s in the destination array where data[i] <= threshold, and 
  * 1s otherwise.
+ * Chop off the first and last 5 spaces
  */
-void threshold(int *dest, const double const* data, size_t n, double threshold) 
+void threshold(int *dest, const double * const data, size_t n, double threshold) 
 {
     int i;
     for (i = 0; i < n; i++ ) {
+				if (i < 5 || i < i - 5 ) {
+					dest[i] = 0;
+				}
         dest[i] = (data[i] > threshold) ? 1 : 0;
     }
 }
@@ -104,7 +106,7 @@ void threshold(int *dest, const double const* data, size_t n, double threshold)
  * -1s in the dest array where data[i] <= -threshold, and 
  * 0s otherwise.
  */
-void sthreshold(double *dest, const double const* data, size_t n, 
+void sthreshold(double *dest, const double * const data, size_t n, 
         double threshold)
 {
     int i;

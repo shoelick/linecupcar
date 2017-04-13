@@ -23,7 +23,7 @@ void convolve(double *result, const double *data, size_t datalen,
  * Normalizes the pass function to be betwen 0 and 1.0.
  * Takes array of ints, produces array of doubles.
  */
-void i_normalize(double *dest, const int *data, const size_t len);
+void i_normalize(double *dest, int *data, size_t len);
 
 /* 
  * Normalizes the pass function to be betwen 0 and 1.0.
@@ -36,8 +36,8 @@ void d_normalize(double *dest, const double *data, const size_t len);
  * Prouduces integer arrays of thresholded data based on passed threshold.
  * sthreshold allows for signed thresholding.
  */
-void threshold(int *dest, const double const* data, size_t n, double threshold);
-void sthreshold(double *dest, const double const* data, size_t n, 
+void threshold(int *dest, const double * const data, size_t n, double threshold);
+void sthreshold(double *dest, const double * const data, size_t n, 
         double threshold); 
 
 /*

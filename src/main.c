@@ -51,13 +51,16 @@ unsigned long DEFAULT_SYSTEM_CLOCK = 20485760U;
 
 char str[100]; /* This is used to print from everywhere */
 camera_driver camera; /* Externally defined for use in ISRs */
-static double normalized[SCAN_LEN];
+
+double normalized[SCAN_LEN];
 double filtered[SCAN_LEN];
 
 /* Macro to turn the setpoint into a servo duty */
-const double SERVO_MIN  = 0.06;
-const double SERVO_MAX  = 0.12;
-#define TO_SERVO_DUTY(S) ((SERVO_MIN-SERVO_MAX) * S + SERVO_MIN) 
+const double SERVO_MIN  = 0.07;
+const double SERVO_MAX  = 0.1042;
+#define TO_SERVO_DUTY(S) ((SERVO_MAX-SERVO_MIN) * S + SERVO_MIN) 
+
+const double DC_MAX = 0.2;
 
 /* FTM Channels */
 const int CH_STARBOARD = 0;
@@ -76,7 +79,7 @@ int main() {
     double s_throttle = 0.5, p_throttle = 0.5, steering = 0.5;
 
     /* state management */
-    uint8_t running = 0, sw;
+    int8_t running = 0, sw;
     uint8_t button_held = 0, state_color = 1, line_detected = 0;
     long int light_elapsed = 0;
     const long int LIGHT_INT = 3000;
@@ -119,34 +122,35 @@ int main() {
 
     // Configure DC FTM
     ftm_init(&dc_ftm, 3); /* use ftm3 for dc motors */
-
     ftm_set_frequency(&dc_ftm, 0, 10e3);
     ftm_enable_pwm(&dc_ftm, 0);
     ftm_enable_pwm(&dc_ftm, 1);
-    ftm_set_duty(&dc_ftm, 0, 0.2);
-    ftm_set_duty(&dc_ftm, 1, 0.5);
+    ftm_set_duty(&dc_ftm, 0, 0);
+    ftm_set_duty(&dc_ftm, 1, 0);
     ftm_enable_int(&dc_ftm);
 
     // Configure Servo FTM
     ftm_init(&servo_ftm, 2);
     ftm_set_frequency(&servo_ftm, 3, 50);
     ftm_enable_pwm(&servo_ftm, 0);
-    ftm_set_duty(&servo_ftm, 0, 0.2);
+    ftm_set_duty(&servo_ftm, 0, 0.5);
     ftm_enable_int(&servo_ftm);
 
     // Configure camera FTM
     ftm_init(&camera_ftm, 0);
-    //ftm_set_frequency(&camera_ftm, 0, 163);
+    //ftm_set_frequency(&camera_ftm, 0, 150k);
     ftm_set_mod(&camera_ftm, 0, 100);
     ftm_set_duty(&camera_ftm, 0, 0.5);
     ftm_enable_pwm(&camera_ftm, 0);
     ftm_enable_cntin_trig(&camera_ftm);
-    ftm_enable_int(&camera_ftm);
 
     // Configure camera ADC
     adc_init(&adc, 0);
     adc_enable_int(&adc);
     adc_set_ftm0_trig(&adc);
+		
+		// Don't enable FTM interrupts until adc has been initalized
+    ftm_enable_int(&camera_ftm);
 
     // Set up PIT 
     init_PIT();
@@ -160,27 +164,27 @@ int main() {
 
         /* Output to UART if enabled */
         if (DEBUG_CAM) matlab_print();
-
+			
         /* Do camera processing */
-        /*if (camera.newscan) {
+        if (camera.newscan) {
 
             // Normalize input
-            i_normalize(normalized, camera.wbuffer, SCAN_LEN);
+            i_normalize(&normalized[0], &camera.wbuffer[0], SCAN_LEN);
 
             // Perform low pass for noise cleaning
-            convolve(filtered, normalized, SCAN_LEN, LOW_PASS, 3);
+            convolve(&filtered[0], &normalized[0], SCAN_LEN, LOW_PASS, 3);
 
             // Perform high pass for derivative 
-            // Put back into camera->wbuffer because we need two separate 
+            // Put back into normalized because we need two separate 
             // buffers
-            convolve(filtered, normalized, SCAN_LEN, HIGH_PASS, 3);
+            convolve(&normalized[0], &filtered[0], SCAN_LEN, HIGH_PASS, 3);
 
             // Normalize derivative
-            d_normalize(filtered, filtered, sizeof(camera.wbuffer));
+            d_normalize(&filtered[0], &normalized[0], SCAN_LEN);
 
             // Threshold
-            sthreshold(filtered, filtered, SCAN_LEN, 0.5); 
- 
+            threshold(&camera.wbuffer[0], &filtered[0], SCAN_LEN, 0.5); 
+					
             // Find maximum groups
             if (count_lines(filtered, SCAN_LEN) > 1) {
 
@@ -204,7 +208,7 @@ int main() {
 
             // Allow a new scan
             camera.newscan = 0;
-        }*/
+        }
 
         /* Compute error and update setpoints */
         if (line_detected) {
@@ -215,12 +219,20 @@ int main() {
 
         if (running) {
 
-            // update values 
+          // update values 
+					if (p_throttle < DC_MAX) p_throttle += 0.05;
+					if (s_throttle < DC_MAX) s_throttle += 0.05;
+					
+
     
         } else {
 
             // slow down
-
+					  if (p_throttle > 0) p_throttle -= 0.02;
+						if (s_throttle > 0) s_throttle -= 0.02;
+					
+					  if (p_throttle < 0) p_throttle = 0.00;
+						if (s_throttle < 0) s_throttle = 0.00;
         }
 
         /* Motors Update */
@@ -264,18 +276,19 @@ void matlab_print() {
     //if (capcnt >= (2/INTEGRATION_TIME)) {
     if (camera.capcnt >= (500)) {
         // Set SI
-        GPIOC_PCOR |= (1 << 4);
+        //GPIOC_PCOR |= (1 << 4);
         // send the array over uart
-        sprintf(str,"%i\n\r",-1); // start value
+        sprintf(str,"%f\n\r",-1.0); // start value
         uart_put(str);
         for (i = 0; i < SCAN_LEN - 1; i++) {
-            sprintf(str,"%d\r\n", camera.scan[i]);
+						sprintf(str,"%f\r\n", 
+							(camera.wbuffer[i] == 1.0) ? 0.9999 : camera.wbuffer[i]);
             uart_put(str);
         }
-        sprintf(str,"%i\n\r",-2); // end value
+        sprintf(str,"%f\n\r",-2.0); // end value
         uart_put(str);
         camera.capcnt = 0;
-        GPIOC_PSOR |= (1 << 4);
+        //GPIOC_PSOR |= (1 << 4);
     }
 }
 

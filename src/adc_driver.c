@@ -28,7 +28,10 @@ int adc_init(adc_driver *driver, int adc_num) {
 
             // Turn on ADC0
             SIM_SCGC6 |= SIM_SCGC6_ADC0_MASK;
-	
+				
+						// Single ended 16 bit conversion, no clock divider
+						driver->regs->CFG1 |= ADC_CFG1_MODE(0x3);
+					
             break;
         case (1):
             driver->regs = ADC1;
@@ -47,6 +50,7 @@ int adc_init(adc_driver *driver, int adc_num) {
 
     if (retval == ADC_ERR_NONE) {
 			/* Set default configuration */
+
 			
 			/* Do calibration */
 			driver->regs->SC3 = ADC_SC3_CAL_MASK;
@@ -60,7 +64,7 @@ int adc_init(adc_driver *driver, int adc_num) {
 			// Set to single ended mode	
 			driver->regs->SC1[0] |= ADC_SC1_AIEN_MASK; 
 			driver->regs->SC1[0] &= ~(ADC_SC1_ADCH_MASK);
-			driver->regs->SC1[0] |= 0x0; // select channel 0
+			driver->regs->SC1[0] |= 0x1; // select channel 1
 		
     }
 
