@@ -3,11 +3,11 @@
  * contains global macros
  */
  
-#define DEBUG_CAM 1
+#define DEBUG_CAM 0
+#define SCAN_LEN 128
 
-static const unsigned long DEFAULT_SYSTEM_CLOCK = 20485760U;
+extern unsigned long DEFAULT_SYSTEM_CLOCK;
 extern char str[100];
-static const int SCAN_LEN = 128;
 
 /* Used to debug camera processing */
 void matlab_print(void);

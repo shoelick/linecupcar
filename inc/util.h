@@ -37,13 +37,13 @@ void d_normalize(double *dest, const double *data, const size_t len);
  * sthreshold allows for signed thresholding.
  */
 void threshold(int *dest, const double const* data, size_t n, double threshold);
-void sthreshold(int *dest, const double const* data, size_t n, 
+void sthreshold(double *dest, const double const* data, size_t n, 
         double threshold); 
 
 /*
  * Count the number of line blobs in the passed array.
  */
-int count_lines(int *data, size_t len);
+int count_lines(double *data, size_t len);
 
 /*
  * Find leftmost line blob
@@ -61,3 +61,5 @@ int find_right_line(int *data, size_t len);
  */
 void delay(int del);
 
+
+int int_pow(int base, int exp);

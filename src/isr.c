@@ -100,7 +100,8 @@ void PIT0_IRQHandler(void){
     }
 
 	// Setting mod resets the FTM counter
-	FTM0_MOD = FTM0_MOD;
+	//FTM0_MOD = FTM0_MOD;
+	FTM0_MOD = 100;
 	
 	// Enable FTM2 interrupts (camera)
 	FTM0_SC |= FTM_SC_TOIE_MASK;

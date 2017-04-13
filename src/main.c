@@ -47,9 +47,11 @@
 #include "uart.h"
 #include "util.h"
 
+unsigned long DEFAULT_SYSTEM_CLOCK = 20485760U;
+
 char str[100]; /* This is used to print from everywhere */
 camera_driver camera; /* Externally defined for use in ISRs */
-double normalized[SCAN_LEN];
+static double normalized[SCAN_LEN];
 double filtered[SCAN_LEN];
 
 /* Macro to turn the setpoint into a servo duty */
@@ -77,7 +79,7 @@ int main() {
     uint8_t running = 0, sw;
     uint8_t button_held = 0, state_color = 1, line_detected = 0;
     long int light_elapsed = 0;
-    const long int LIGHT_INT = 300000;
+    const long int LIGHT_INT = 3000;
 
     /* Set camera struct valus */
     camera.pixcnt = 0;
@@ -115,10 +117,6 @@ int main() {
     // Initialize uart for debugging
     uart_init();
 
-    sprintf(str, "MOD: %d C0V: %d \r\n", dc_ftm.regs->MOD, \
-            dc_ftm.regs->CONTROLS[0].CnV);
-    uart_put(str);
-
     // Configure DC FTM
     ftm_init(&dc_ftm, 3); /* use ftm3 for dc motors */
 
@@ -138,8 +136,12 @@ int main() {
 
     // Configure camera FTM
     ftm_init(&camera_ftm, 0);
-    ftm_set_frequency(&camera_ftm, 0, DEFAULT_SYSTEM_CLOCK / 100);
+    //ftm_set_frequency(&camera_ftm, 0, 163);
+    ftm_set_mod(&camera_ftm, 0, 100);
+    ftm_set_duty(&camera_ftm, 0, 0.5);
+    ftm_enable_pwm(&camera_ftm, 0);
     ftm_enable_cntin_trig(&camera_ftm);
+    ftm_enable_int(&camera_ftm);
 
     // Configure camera ADC
     adc_init(&adc, 0);
@@ -149,8 +151,6 @@ int main() {
     // Set up PIT 
     init_PIT();
 
-    // Enable FTM interrupts now that everything else is ready
-    ftm_enable_int(&camera_ftm);
 
     /***************************************************************************
      * LOOP
@@ -162,25 +162,24 @@ int main() {
         if (DEBUG_CAM) matlab_print();
 
         /* Do camera processing */
-        if (camera.newscan) {
+        /*if (camera.newscan) {
 
             // Normalize input
             i_normalize(normalized, camera.wbuffer, SCAN_LEN);
 
             // Perform low pass for noise cleaning
-            convolve(normalized, sizeof(camera.wbuffer), LOW_PASS, 
-                    3, filtered);
+            convolve(filtered, normalized, SCAN_LEN, LOW_PASS, 3);
 
             // Perform high pass for derivative 
             // Put back into camera->wbuffer because we need two separate 
             // buffers
-            convolve(normalized, SCAN_LEN, HIGH_PASS, 3, filtered);
+            convolve(filtered, normalized, SCAN_LEN, HIGH_PASS, 3);
 
             // Normalize derivative
             d_normalize(filtered, filtered, sizeof(camera.wbuffer));
 
             // Threshold
-            sthreshold(filtered, SCAN_LEN, FILTERED, 0.5); 
+            sthreshold(filtered, filtered, SCAN_LEN, 0.5); 
  
             // Find maximum groups
             if (count_lines(filtered, SCAN_LEN) > 1) {
@@ -204,8 +203,8 @@ int main() {
             }
 
             // Allow a new scan
-            camera.newscan = 1;
-        }
+            camera.newscan = 0;
+        }*/
 
         /* Compute error and update setpoints */
         if (line_detected) {
@@ -269,8 +268,8 @@ void matlab_print() {
         // send the array over uart
         sprintf(str,"%i\n\r",-1); // start value
         uart_put(str);
-        for (i = 0; i < SCAN_LEN; i++) {
-            sprintf(str,"%f\r\n", filtered[i]);
+        for (i = 0; i < SCAN_LEN - 1; i++) {
+            sprintf(str,"%d\r\n", camera.scan[i]);
             uart_put(str);
         }
         sprintf(str,"%i\n\r",-2); // end value

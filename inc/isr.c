@@ -14,7 +14,8 @@
 void FTM0_IRQHandler(void){ //For FTM timer
 	
 	// Handle on ADC value
-	uint16_t adcval = camera.adc->regs->R[0];
+    uint16_t adcval = ADC0_RA >> 4;
+	//uint16_t adcval = camera.adc->regs->R[0];
 	
 	// Clear interrupt
 	FTM0_SC &= ~FTM_SC_TOF_MASK;

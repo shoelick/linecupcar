@@ -62,6 +62,12 @@ int ftm_init(ftm_driver *drv, int num){
         // Disable Write Protection
         ftm_enable_wr(drv);
 
+        // Set output to '1' on init
+        drv->regs->OUTINIT |= FTM_OUTINIT_CH0OI_MASK;
+
+        // Set the Counter Initial Value to 0
+        drv->regs->CNTIN = 1;
+
         // Initialize the CNT to 0 before writing to MOD
         drv->regs->CNT = 0;
 
@@ -89,12 +95,6 @@ void ftm_enable_pwm(ftm_driver *drv, int ch) {
 
     ftm_enable_wr(drv);
 
-    // Set output to '1' on init
-    drv->regs->OUTINIT |= FTM_OUTINIT_CH0OI_MASK;
-
-    // Set the Counter Initial Value to 0
-    drv->regs->CNTIN = 1;
-
     // Set edge-aligned mode
     drv->regs->CONTROLS[ch].CnSC |= FTM_CnSC_MSB_MASK;
 
@@ -116,8 +116,8 @@ void ftm_set_frequency(ftm_driver *drv, int prescaler, int freq) {
     drv->regs->SC &= ~FTM_SC_PS_MASK;
     drv->regs->SC |= FTM_SC_PS(prescaler);
 
-	  // Calculate corresponding mod value
-    prescaler = pow(2,prescaler);
+    // Calculate corresponding mod value
+    prescaler = int_pow(2,prescaler);
 	
     // Set the mod value according to the desired frequency
     drv->regs->CNT = 0;
@@ -126,10 +126,29 @@ void ftm_set_frequency(ftm_driver *drv, int prescaler, int freq) {
     // Enable write protection
     ftm_disable_wr(drv);
 
-		// Allow mod value to get latched in
-		delay(1);
+    // Allow mod value to get latched in
+    delay(1);
 }
 
+void ftm_set_mod(ftm_driver *drv, int prescaler, int mod) {
+	
+    // Disable Write Protection
+    ftm_enable_wr(drv);
+
+    // Set prescaler value
+    drv->regs->SC &= ~FTM_SC_PS_MASK;
+    drv->regs->SC |= FTM_SC_PS(prescaler);
+
+    // Set the mod value according to the desired frequency
+    drv->regs->CNT = 0;
+    drv->regs->MOD = mod; 
+		
+    // Enable write protection
+    ftm_disable_wr(drv);
+
+    // Allow mod value to get latched in
+    delay(1);
+}
 void ftm_set_duty(ftm_driver *drv, int ch, double duty) {
 
     drv->regs->CONTROLS[ch].CnV = (int) ((double) (drv->regs->MOD)) * duty;
@@ -145,7 +164,7 @@ void ftm_disable_int(ftm_driver *drv) {
 
 void ftm_enable_int(ftm_driver *drv) {
 
-    // Enable FTM2 interrupts (camera)
+    // Enable interrupts 
     drv->regs->SC |= FTM_SC_TOIE_MASK;
 
     // Set up interrupt

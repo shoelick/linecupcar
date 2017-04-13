@@ -35,6 +35,7 @@ void ftm_enable_pwm(ftm_driver *drv, int ch);
  * have to count. Counter max is 65536.
  */ 
 void ftm_set_frequency(ftm_driver *drv, int prescaler, int freq);
+void ftm_set_mod(ftm_driver *drv, int prescaler, int mod);
 
 /*
  * Sets the duty cycle based on the set frequency.

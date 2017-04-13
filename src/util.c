@@ -3,6 +3,7 @@
  * Utility functionality for signal processing and driving.
  */
 
+#include <stdint.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <util.h>
@@ -103,7 +104,8 @@ void threshold(int *dest, const double const* data, size_t n, double threshold)
  * -1s in the dest array where data[i] <= -threshold, and 
  * 0s otherwise.
  */
-void sthreshold(int *dest, const double const* data, size_t n, double threshold) 
+void sthreshold(double *dest, const double const* data, size_t n, 
+        double threshold)
 {
     int i;
     for (i = 0; i < n; i++ ) {
@@ -117,14 +119,14 @@ void sthreshold(int *dest, const double const* data, size_t n, double threshold)
  * Takes in the signed threshold'd data and counts the detected black line 
  * blobs.
  */
-int count_lines(int *data, size_t len) {
+int count_lines(double *data, size_t len) {
 
-    int count, i;
+    int count = 0, i;
     uint8_t found_line = 0;
     for (i = 0; i < len; i++) {
 
         /* End of line blob */
-        if (data[i] == LINE_END) {
+        if (data[i] == LINE_STOP) {
 
             /* If we're only catch the end of the line, increment */
             if (!found_line) {
@@ -154,4 +156,20 @@ void delay(int del){
     for (i=0; i<del*50000; i++){
         // Do nothing
     }
+}
+
+/*
+ * integer based exponentiation
+ */
+int int_pow(int base, int exp)
+{
+    int result = 1;
+    while (exp)
+    {
+        if (exp & 1)
+           result *= base;
+        exp /= 2;
+        base *= base;
+    }
+    return result;
 }
