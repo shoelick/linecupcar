@@ -19,7 +19,8 @@
 function plot_cameras_serial
 %delete(instrfindall)
 %Send over bluetooth or serial
-serialPort = 'COM165';
+%serialPort = 'COM165';
+serialPort = '/dev/cu.usbmodem1422';
 serialObject = serial(serialPort);
 %configure serial connection
 serialObject.BaudRate = 9600; %(Default)
@@ -41,8 +42,8 @@ while (1)
     % Check for data in the stream
     if serialObject.BytesAvailable
         val = fscanf(serialObject,'%f');
-        %val
-        if ((val == -1) || (val == -3)) % -1 and -3 are start keywords
+        
+       if ((val == -1) || (val == -3)) % -1 and -3 are start keywords
             count = 1;
             val
         elseif (val == -2) % End camera1 tx
@@ -93,7 +94,7 @@ plot(smoothtrace);
 %THRESHOLD
 %calculate 1's and 0's via thresholding
 maxval = max(smoothtrace);
-threshold = maxval/2;
+threshold = maxval/2.5;
 for i = 1:128
     %Edge detection (binary 0 or 1)
     if(smoothtrace(i) < threshold)

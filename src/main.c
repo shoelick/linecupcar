@@ -54,6 +54,7 @@ camera_driver camera; /* Externally defined for use in ISRs */
 
 double normalized[SCAN_LEN];
 double filtered[SCAN_LEN];
+int processed[SCAN_LEN];
 
 /* Macro to turn the setpoint into a servo duty */
 const double SERVO_MIN  = 0.07;
@@ -83,6 +84,8 @@ int main() {
     uint8_t button_held = 0, state_color = 1, line_detected = 0;
     long int light_elapsed = 0;
     const long int LIGHT_INT = 3000;
+    int numlines = 0; 
+    double center = 0;
 
     /* Set camera struct valus */
     camera.pixcnt = 0;
@@ -148,8 +151,8 @@ int main() {
     adc_init(&adc, 0);
     adc_enable_int(&adc);
     adc_set_ftm0_trig(&adc);
-		
-		// Don't enable FTM interrupts until adc has been initalized
+
+    // Don't enable FTM interrupts until adc has been initalized
     ftm_enable_int(&camera_ftm);
 
     // Set up PIT 
@@ -164,7 +167,7 @@ int main() {
 
         /* Output to UART if enabled */
         if (DEBUG_CAM) matlab_print();
-			
+
         /* Do camera processing */
         if (camera.newscan) {
 
@@ -172,30 +175,61 @@ int main() {
             i_normalize(&normalized[0], &camera.wbuffer[0], SCAN_LEN);
 
             // Perform low pass for noise cleaning
-            convolve(&filtered[0], &normalized[0], SCAN_LEN, LOW_PASS, 3);
+            //convolve(&filtered[0], &normalized[0], SCAN_LEN, LOW_PASS, 3);
+            convolve(&filtered[0], &normalized[0], SCAN_LEN, BOXCAR_4, 4);
+
+            // Do naiive derivative
+            slopify(&normalized[0], &filtered[0], SCAN_LEN);
 
             // Perform high pass for derivative 
             // Put back into normalized because we need two separate 
             // buffers
-            convolve(&normalized[0], &filtered[0], SCAN_LEN, HIGH_PASS, 3);
+            //convolve(&normalized[0], &filtered[0], SCAN_LEN, DERIVATIVE, 2);
+            //convolve(&normalized[0], &filtered[0], SCAN_LEN, HIGH_PASS, 3);
 
             // Normalize derivative
-            d_normalize(&filtered[0], &normalized[0], SCAN_LEN);
+            //convolve(&normalized[0], &filtered[0], SCAN_LEN, BOXCAR_4, 4);
+            convolve(&filtered[0], &normalized[0], SCAN_LEN, BOXCAR_4, 4);
+            d_normalize(&normalized[0], &filtered[0], SCAN_LEN);
 
             // Threshold
-            threshold(&camera.wbuffer[0], &filtered[0], SCAN_LEN, 0.5); 
-					
-            // Find maximum groups
-            if (count_lines(filtered, SCAN_LEN) > 1) {
+            threshold(&processed[0], &normalized[0], SCAN_LEN, 0.5); 
 
+            numlines= count_lines(processed, SCAN_LEN);
+            //sprintf(str, "Num lines: %d\n\r", numlines); 
+            uart_put(str);
+
+            // Find maximum groups
+            if (numlines >= 1) {
+
+                center = center_average(processed, SCAN_LEN);
+
+                //sprintf(str, "center of lines: %d\n\r",  center);
+
+                if (numlines == 2) {
+                    steering = ((double) center / SCAN_LEN);
+                } else if (numlines == 1) {
+                    center /= SCAN_LEN; 
+                    if (center < 0.5) {
+                        steering = 0.5 - center;
+                    } else {
+                        steering = center - 0.5;
+                    }
+                } else {
+                    steering = 0.5;
+                }
+
+
+                sprintf(str, "steering: 0.%d\n\r",  (int) (steering * 1000));
+                uart_put(str);
                 // Check for finish line 
 
                 // Try to find left line
-                
+
                 // Try to find right line
-                
+
                 // If we have both, find center
-                
+
                 // Otherwise, hug the one we have
 
                 // we found lines 
@@ -208,6 +242,7 @@ int main() {
 
             // Allow a new scan
             camera.newscan = 0;
+           
         }
 
         /* Compute error and update setpoints */
@@ -219,20 +254,20 @@ int main() {
 
         if (running) {
 
-          // update values 
-					if (p_throttle < DC_MAX) p_throttle += 0.05;
-					if (s_throttle < DC_MAX) s_throttle += 0.05;
-					
+            // update values 
+            if (p_throttle < DC_MAX) p_throttle += 0.05;
+            if (s_throttle < DC_MAX) s_throttle += 0.05;
 
-    
+
+
         } else {
 
             // slow down
-					  if (p_throttle > 0) p_throttle -= 0.02;
-						if (s_throttle > 0) s_throttle -= 0.02;
-					
-					  if (p_throttle < 0) p_throttle = 0.00;
-						if (s_throttle < 0) s_throttle = 0.00;
+            if (p_throttle > 0) p_throttle -= 0.02;
+            if (s_throttle > 0) s_throttle -= 0.02;
+
+            if (p_throttle < 0) p_throttle = 0.00;
+            if (s_throttle < 0) s_throttle = 0.00;
         }
 
         /* Motors Update */
@@ -278,14 +313,16 @@ void matlab_print() {
         // Set SI
         //GPIOC_PCOR |= (1 << 4);
         // send the array over uart
-        sprintf(str,"%f\n\r",-1.0); // start value
+        sprintf(str,"%d\n\r",-1); // start value
         uart_put(str);
         for (i = 0; i < SCAN_LEN - 1; i++) {
-						sprintf(str,"%f\r\n", 
-							(camera.wbuffer[i] == 1.0) ? 0.9999 : camera.wbuffer[i]);
+            //sprintf(str,"%d\r\n", camera.wbuffer[i]);
+            //sprintf(str,"%d\r\n", (int) (filtered[i] * 100.0));
+            sprintf(str,"%d\r\n", (int) (processed[i]));
+            //sprintf(str, "%d\r\n", (int) (normalized[i] * 1000.0));
             uart_put(str);
         }
-        sprintf(str,"%f\n\r",-2.0); // end value
+        sprintf(str,"%d\n\r",-2); // end value
         uart_put(str);
         camera.capcnt = 0;
         //GPIOC_PSOR |= (1 << 4);

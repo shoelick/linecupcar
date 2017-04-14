@@ -7,6 +7,8 @@
 
 extern const double HIGH_PASS[];
 extern const double LOW_PASS[];
+extern const double DERIVATIVE[];
+extern const double BOXCAR_4[];
 
 #define LINE_START 1
 #define LINE_STOP -1
@@ -43,7 +45,7 @@ void sthreshold(double *dest, const double * const data, size_t n,
 /*
  * Count the number of line blobs in the passed array.
  */
-int count_lines(double *data, size_t len);
+int count_lines(int const * const data, size_t len);
 
 /*
  * Find leftmost line blob
@@ -61,5 +63,7 @@ int find_right_line(int *data, size_t len);
  */
 void delay(int del);
 
+void slopify(double *dest, const double * const data, const size_t n);
+int center_average(int const * const data, size_t len);
 
 int int_pow(int base, int exp);
