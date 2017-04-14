@@ -6,6 +6,9 @@
 #include "MK64F12.h"                    // Device header
 #include "gpio.h"
 
+/* 
+ * LED intialization
+ */
 void led_init(void) {
     // Enable clocks on Ports B, C and E for LED timing
     SIM_SCGC5 = SIM_SCGC5_PORTB_MASK; 
@@ -31,6 +34,9 @@ void led_init(void) {
 
 }
 
+/*
+ * Sets up pushbutton
+ */
 void button_init(void) {
 
     // Enable clock for Port C PTC6 button
@@ -45,6 +51,10 @@ void button_init(void) {
 
 }
 
+/* 
+ * Set the correct combination of pins to 
+ * set LED output.
+ */
 void set_led(color_t color) {
     switch(color) {
         case RED:
@@ -90,6 +100,9 @@ void set_led(color_t color) {
     }
 }
 
+/* 
+ * Whether pushbutton is pressed
+ */
 int sw_active() {
     return (GPIOC_PDIR & (1 << 6)) == 0;
 }

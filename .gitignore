@@ -1,5 +1,6 @@
 .DS_Store
 gdb_test
+gdb/build
 Makefile
 build
 ._*
@@ -7,3 +8,4 @@ keil/Listings
 keil/Objects
 keil/RTE
 __pycache__
+openocd.log

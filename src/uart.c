@@ -10,16 +10,10 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <main.h>
-#define BAUD_RATE 9600      //default baud rate 
-#define SYS_CLOCK 20485760 //default system clock (see DEFAULT_SYSTEM_CLOCK  in system_MK64F12.c)
 
-#define UART0_TXRX_ENABLE 0x00C0
-
-void uart_put(char *ptr_str);
-void uart_init(void);
-uint8_t uart_getchar(void);
-void uart_putchar(char ch);
-
+/* 
+ * Initialize UART0 hardware
+ */
 void uart_init()
 {
     //define variables for baud rate and baud rate fine adjust
@@ -31,23 +25,26 @@ void uart_init()
     //SIM_SCGC4 handles the module clock gating for UART0
     SIM_SCGC4 |= SIM_SCGC4_UART0_MASK;
 
-    //Configure the port control register to alternative 3 (which is UART mode for K64)
-    PORTB_PCR16 = PORT_PCR_MUX(3);
-    PORTB_PCR17 = PORT_PCR_MUX(3);
+    //Configure the port control register to alternative 3 (which is UART mode
+    //for K64)
+    PORTB_PCR16 = PORT_PCR_MUX(3); PORTB_PCR17 = PORT_PCR_MUX(3);
 
     /*Configure the UART for establishing serial communication*/
 
-    //Disable transmitter and receiver until proper settings are chosen for the UART module
+    // Disable transmitter and receiver until proper settings are chosen for the
+    // UART module
+
     UART0_C2 &= ~(UART_C2_RE_MASK | UART_C2_TE_MASK);
 
-    //Select default transmission/reception settings for serial communication of UART by clearing the control register 1
+    //Select default transmission/reception settings for serial communication
+    //of UART by clearing the control register 1
     UART0_C1 = 0x00;
 
-    //UART Baud rate is calculated by: baud rate = UART module clock / (16 × (SBR[12:0] + BRFD))
-    //13 bits of SBR are shared by the 8 bits of UART3_BDL and the lower 5 bits of UART3_BDH 
-    //BRFD is dependent on BRFA, refer Table 52-234 in K64 reference manual
-    //BRFA is defined by the lower 4 bits of control register, UART0_C4 
-
+    //UART Baud rate is calculated by: baud rate = UART module clock / (16 ×
+    //(SBR[12:0] + BRFD)) 13 bits of SBR are shared by the 8 bits of UART3_BDL
+    //and the lower 5 bits of UART3_BDH BRFD is dependent on BRFA, refer Table
+    //52-234 in K64 reference manual BRFA is defined by the lower 4 bits of
+    //control register, UART0_C4 
     //calculate baud rate settings: ubd = UART module clock/16* baud rate
     ubd = (uint16_t)((SYS_CLOCK)/(BAUD_RATE * 16));  
 
@@ -70,6 +67,9 @@ void uart_init()
 
 }
 
+/*
+ * Read a single character from UART
+ */
 uint8_t uart_getchar()
 {
     /* Wait until there is space for more data in the receiver buffer*/
@@ -79,6 +79,9 @@ uint8_t uart_getchar()
     return UART0_D;
 }
 
+/*
+ * Print a single character to UART
+ */
 void uart_putchar(char ch)
 {
     /* Wait until transmission of previous bit is complete */
@@ -88,20 +91,18 @@ void uart_putchar(char ch)
     UART0_D = (uint8_t)ch;
 }
 
+/* 
+ * Print passed string 
+ */
 void uart_put(char *ptr_str)
 {
 	while(*ptr_str)
 		uart_putchar(*ptr_str++);
 }
 
-void putnumU(int num) {
-    
-    char str[4];
-    sprintf(str, "%d", num);
-    uart_put(str);
-    
-}
-
+/*
+ * Variable arg UART print
+ */
 void printu(char *format, ...) {
 
     va_list args;

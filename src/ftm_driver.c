@@ -1,13 +1,20 @@
+/*
+ * ftm_driver.h
+ * Driver for the FTMs on KL64.
+ */
 
-
-#include "MK64F12.h"
-#include "main.h"
 #include <math.h>
 #include <stdio.h>
+
+#include "MK64F12.h"
+#include "main.h" /* Need for system clock */
 #include "ftm_driver.h"
 #include "uart.h"
 #include "util.h"
 
+/*
+ * Initialize an FTM
+ */
 int ftm_init(ftm_driver *drv, int num){
 
     int retval = FTM_ERR_NONE;
@@ -21,6 +28,7 @@ int ftm_init(ftm_driver *drv, int num){
 
     switch(num) {
 
+        /* Set up according to passed FTM number */
         case 0:
             drv->regs = FTM0;
             drv->irqn = FTM0_IRQn;
@@ -84,6 +92,9 @@ int ftm_init(ftm_driver *drv, int num){
     return retval;
 }
 
+/* 
+ * Used to use this FTM for triggering ADC
+ */
 void ftm_enable_cntin_trig(ftm_driver *drv) {
 
     // Enable hardware trigger from FTM2
@@ -91,6 +102,9 @@ void ftm_enable_cntin_trig(ftm_driver *drv) {
 
 }
 
+/*
+ * Enable PWM output with passed channel
+ */
 void ftm_enable_pwm(ftm_driver *drv, int ch) {
 
     ftm_enable_wr(drv);
@@ -107,8 +121,12 @@ void ftm_enable_pwm(ftm_driver *drv, int ch) {
 
 }
 
+/* 
+ * Attempt to set the frequency of this ftm according to params.
+ * Finicky
+ */
 void ftm_set_frequency(ftm_driver *drv, int prescaler, int freq) {
-	
+
     // Disable Write Protection
     ftm_enable_wr(drv);
 
@@ -118,11 +136,11 @@ void ftm_set_frequency(ftm_driver *drv, int prescaler, int freq) {
 
     // Calculate corresponding mod value
     prescaler = int_pow(2,prescaler);
-	
+
     // Set the mod value according to the desired frequency
     drv->regs->CNT = 0;
     drv->regs->MOD = DEFAULT_SYSTEM_CLOCK / prescaler / freq;
-		
+
     // Enable write protection
     ftm_disable_wr(drv);
 
@@ -130,8 +148,11 @@ void ftm_set_frequency(ftm_driver *drv, int prescaler, int freq) {
     delay(1);
 }
 
+/* 
+ * Directly set mod and prescaler values
+ */
 void ftm_set_mod(ftm_driver *drv, int prescaler, int mod) {
-	
+
     // Disable Write Protection
     ftm_enable_wr(drv);
 
@@ -142,22 +163,29 @@ void ftm_set_mod(ftm_driver *drv, int prescaler, int mod) {
     // Set the mod value according to the desired frequency
     drv->regs->CNT = 0;
     drv->regs->MOD = mod; 
-		
+
     // Enable write protection
     ftm_disable_wr(drv);
 
     // Allow mod value to get latched in
     delay(1);
 }
+
+/* 
+ * Set the duty output of the passed ftm channel
+ */
 void ftm_set_duty(ftm_driver *drv, int ch, double duty) {
 
-		int cnv = ((double) (drv->regs->MOD)) * duty;
-		
-		// Don't allow a negative value
-		drv->regs->CONTROLS[ch].CnV = (cnv < 0) ? 0 : cnv;
+    int cnv = ((double) (drv->regs->MOD)) * duty;
+
+    // Don't allow a negative value
+    drv->regs->CONTROLS[ch].CnV = (cnv < 0) ? 0 : cnv;
 
 }
 
+/*
+ * Disable FTM interrupts
+ */
 void ftm_disable_int(ftm_driver *drv) {
 
     // Don't enable interrupts yet (disable)
@@ -165,6 +193,9 @@ void ftm_disable_int(ftm_driver *drv) {
 
 }
 
+/*
+ * Enable FTM interrupts 
+ */
 void ftm_enable_int(ftm_driver *drv) {
 
     // Enable interrupts 
@@ -175,6 +206,9 @@ void ftm_enable_int(ftm_driver *drv) {
 
 }
 
+/*
+ * Handling FTM write protection
+ */
 void ftm_disable_wr(ftm_driver *drv) {
 
     // Enable write protection
@@ -186,3 +220,4 @@ void ftm_enable_wr(ftm_driver *drv) {
     // Disable Write Protection
     drv->regs->MODE |= FTM_MODE_WPDIS_MASK;
 }
+
