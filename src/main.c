@@ -86,6 +86,7 @@ int main() {
     const long int LIGHT_INT = 3000;
     int numlines = 0; 
     int center = 0;
+    double position;
 
     /* Set camera struct valus */
     camera.pixcnt = 0;
@@ -205,19 +206,20 @@ int main() {
 
                 printu("center of lines: %d\n\r",  center);
                 printu("--------------------");
-                steering = ((double) center / SCAN_LEN);
                 
-                /*if (numlines == 2) {
+                if (numlines == 2) {
+                    steering = ((double) center / SCAN_LEN);
+                    position = 1 - steering;
                 } else if (numlines == 1) {
-                    steering center /= SCAN_LEN; 
-                    if (center < 0.5) {
-                        steering = 0.5 - center;
+                    //steering center /= SCAN_LEN; 
+                    if (position > 0.5) {
+                        steering = pos - center;
                     } else {
-                        steering = center - 0.5;
+                        steering = center - pos;
                     }
                 } else {
                     steering = 0.5;
-                }*/
+                }
 
 
                 /*sprintf(str, "steering: 0.%d\n\r",  (int) (steering * 1000));
