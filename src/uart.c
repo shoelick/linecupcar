@@ -8,6 +8,8 @@
 
 #include "MK64F12.h"
 #include <stdio.h>
+#include <stdarg.h>
+#include <main.h>
 #define BAUD_RATE 9600      //default baud rate 
 #define SYS_CLOCK 20485760 //default system clock (see DEFAULT_SYSTEM_CLOCK  in system_MK64F12.c)
 
@@ -100,3 +102,12 @@ void putnumU(int num) {
     
 }
 
+void printu(char *format, ...) {
+
+    va_list args;
+    va_start(args, format);
+
+    vsprintf(str, format, args);
+    if (!DEBUG_CAM) uart_put(str);
+
+}

@@ -61,7 +61,7 @@ const double SERVO_MIN  = 0.07;
 const double SERVO_MAX  = 0.1042;
 #define TO_SERVO_DUTY(S) ((SERVO_MAX-SERVO_MIN) * S + SERVO_MIN) 
 
-const double DC_MAX = 0.2;
+const double DC_MAX = 0.25;
 
 /* FTM Channels */
 const int CH_STARBOARD = 0;
@@ -85,7 +85,7 @@ int main() {
     long int light_elapsed = 0;
     const long int LIGHT_INT = 3000;
     int numlines = 0; 
-    double center = 0;
+    int center = 0;
 
     /* Set camera struct valus */
     camera.pixcnt = 0;
@@ -196,20 +196,20 @@ int main() {
             threshold(&processed[0], &normalized[0], SCAN_LEN, 0.5); 
 
             numlines= count_lines(processed, SCAN_LEN);
-            //sprintf(str, "Num lines: %d\n\r", numlines); 
-            uart_put(str);
+            printu("Num lines: %d\n\r", numlines); 
 
             // Find maximum groups
             if (numlines >= 1) {
 
                 center = center_average(processed, SCAN_LEN);
 
-                //sprintf(str, "center of lines: %d\n\r",  center);
-
-                if (numlines == 2) {
-                    steering = ((double) center / SCAN_LEN);
+                printu("center of lines: %d\n\r",  center);
+                printu("--------------------");
+                steering = ((double) center / SCAN_LEN);
+                
+                /*if (numlines == 2) {
                 } else if (numlines == 1) {
-                    center /= SCAN_LEN; 
+                    steering center /= SCAN_LEN; 
                     if (center < 0.5) {
                         steering = 0.5 - center;
                     } else {
@@ -217,11 +217,11 @@ int main() {
                     }
                 } else {
                     steering = 0.5;
-                }
+                }*/
 
 
-                sprintf(str, "steering: 0.%d\n\r",  (int) (steering * 1000));
-                uart_put(str);
+                /*sprintf(str, "steering: 0.%d\n\r",  (int) (steering * 1000));
+                uart_put(str);*/
                 // Check for finish line 
 
                 // Try to find left line
@@ -268,6 +268,8 @@ int main() {
 
             if (p_throttle < 0) p_throttle = 0.00;
             if (s_throttle < 0) s_throttle = 0.00;
+
+            steering = 0.5;
         }
 
         /* Motors Update */

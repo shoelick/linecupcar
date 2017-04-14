@@ -13,5 +13,6 @@ void putnumU(int i);
 void uart_init(void);
 uint8_t uart_getchar(void);
 void uart_putchar(char ch);
+void printu(char *format, ...);
 
 #endif

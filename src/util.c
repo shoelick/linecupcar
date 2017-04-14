@@ -3,7 +3,6 @@
  * Utility functionality for signal processing and driving.
  */
 
-#include "main.h"
 #include <math.h>
 #include <stdint.h>
 #include <stddef.h>
@@ -133,7 +132,7 @@ int center_average(int const * const data, size_t len) {
     int pix_since_last_1 = 0;
     int index_start = 0;
     int index_of_last = 0;
-    int newthresh = 35;
+    int newthresh = 30;
     int widththresh = 10;
     int sum = 0;
     for (i = 0; i < len; i++) {
@@ -141,8 +140,7 @@ int center_average(int const * const data, size_t len) {
         if (data[i] == 1) {
 
             if (!found_line) {
-                //sprintf(str, "Line start at %d\n\r", i);
-                uart_put(str);
+                printu("Line start at %d\n\r", i);
                 count += 1;
                 width = 0;
                 found_line = 1;
@@ -157,18 +155,15 @@ int center_average(int const * const data, size_t len) {
         else if (data[i] == 0 && found_line) {
 
             if (pix_since_last_1 > newthresh) {
-                //sprintf(str, "Line finished at %d\n\r", i); 
-                uart_put(str);
+                printu("Line finished at %d\n\r", i); 
 
                 if (width < widththresh) {
-                    //sprintf(str, "Line ignored with width %d\n\r", width); 
-                    uart_put(str);
+                    printu("Line ignored with width %d\n\r", width); 
                     count--;
                 }  else {
 
                     sum += (index_of_last + index_start)/2; 
-                    //sprintf(str, "Sum is now: %d\n\r", sum);
-                    uart_put(str);
+                    printu("Sum is now: %d\n\r", sum);
                 }
                 found_line = 0;
             } else {
@@ -178,11 +173,9 @@ int center_average(int const * const data, size_t len) {
     }
 
     if (found_line) {
-        //sprintf(str, "Assuming final one at %d\n\r", index_of_last); 
-        uart_put(str);
+        printu("Assuming final one at %d\n\r", index_of_last); 
         sum += (index_of_last + index_start) /2;
-        //sprintf(str, "Sum is now: %d\n\r", sum);
-        uart_put(str);
+        printu("Sum is now: %d\n\r", sum);
     }
 
     return sum / count;
