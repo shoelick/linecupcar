@@ -213,9 +213,9 @@ int main() {
                 } else if (numlines == 1) {
                     //steering center /= SCAN_LEN; 
                     if (position > 0.5) {
-                        steering = pos - center;
+                        steering = position - center;
                     } else {
-                        steering = center - pos;
+                        steering = center - position;
                     }
                 } else {
                     steering = 0.5;
