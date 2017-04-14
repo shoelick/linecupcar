@@ -108,6 +108,6 @@ void printu(char *format, ...) {
     va_start(args, format);
 
     vsprintf(str, format, args);
-    if (!DEBUG_CAM) uart_put(str);
+    if (!DEBUG_CAM && ENABLE_PRINT) uart_put(str);
 
 }

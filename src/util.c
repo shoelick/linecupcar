@@ -140,7 +140,7 @@ int center_average(int const * const data, size_t len) {
         if (data[i] == 1) {
 
             if (!found_line) {
-                printu("Line start at %d\n\r", i);
+                //printu("Line start at %d\n\r", i);
                 count += 1;
                 width = 0;
                 found_line = 1;
@@ -155,15 +155,15 @@ int center_average(int const * const data, size_t len) {
         else if (data[i] == 0 && found_line) {
 
             if (pix_since_last_1 > newthresh) {
-                printu("Line finished at %d\n\r", i); 
+                //printu("Line finished at %d\n\r", i); 
 
                 if (width < widththresh) {
-                    printu("Line ignored with width %d\n\r", width); 
+                    //printu("Line ignored with width %d\n\r", width); 
                     count--;
                 }  else {
 
                     sum += (index_of_last + index_start)/2; 
-                    printu("Sum is now: %d\n\r", sum);
+                    //printu("Sum is now: %d\n\r", sum);
                 }
                 found_line = 0;
             } else {
@@ -173,9 +173,9 @@ int center_average(int const * const data, size_t len) {
     }
 
     if (found_line) {
-        printu("Assuming final one at %d\n\r", index_of_last); 
+        //printu("Assuming final one at %d\n\r", index_of_last); 
         sum += (index_of_last + index_start) /2;
-        printu("Sum is now: %d\n\r", sum);
+        //printu("Sum is now: %d\n\r", sum);
     }
 
     return sum / count;

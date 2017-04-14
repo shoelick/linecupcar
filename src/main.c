@@ -61,7 +61,7 @@ const double SERVO_MIN  = 0.07;
 const double SERVO_MAX  = 0.1042;
 #define TO_SERVO_DUTY(S) ((SERVO_MAX-SERVO_MIN) * S + SERVO_MIN) 
 
-const double DC_MAX = 0.25;
+const double DC_MAX = 0.4;
 
 /* FTM Channels */
 const int CH_STARBOARD = 0;
@@ -86,7 +86,7 @@ int main() {
     const long int LIGHT_INT = 3000;
     int numlines = 0; 
     int center = 0;
-    double position;
+    double position, f_center;
 
     /* Set camera struct valus */
     camera.pixcnt = 0;
@@ -196,34 +196,35 @@ int main() {
             // Threshold
             threshold(&processed[0], &normalized[0], SCAN_LEN, 0.5); 
 
+            printu("-------------------\r\n");
             numlines= count_lines(processed, SCAN_LEN);
-            printu("Num lines: %d\n\r", numlines); 
+            //printu("Num lines: %d\n\r", numlines); 
 
             // Find maximum groups
             if (numlines >= 1) {
 
                 center = center_average(processed, SCAN_LEN);
 
-                printu("center of lines: %d\n\r",  center);
-                printu("--------------------");
+               
+                f_center = ((double) center / SCAN_LEN); 
                 
+                printu("center of lines: %d\n\r",  center);
+                printu("Position: %d\n\r", (int) (position * 100));
                 if (numlines == 2) {
-                    steering = ((double) center / SCAN_LEN);
+                    steering = f_center; 
                     position = 1 - steering;
                 } else if (numlines == 1) {
-                    //steering center /= SCAN_LEN; 
                     if (position > 0.5) {
-                        steering = position - center;
+                        steering = position - f_center;
                     } else {
-                        steering = center - position;
+                        steering = 1 - (f_center - position);
                     }
                 } else {
                     steering = 0.5;
                 }
 
 
-                /*sprintf(str, "steering: 0.%d\n\r",  (int) (steering * 1000));
-                uart_put(str);*/
+                printu("steering: 0.%d\n\r",  (int) (steering * 1000));
                 // Check for finish line 
 
                 // Try to find left line
@@ -277,6 +278,9 @@ int main() {
         /* Motors Update */
         ftm_set_duty(&dc_ftm, CH_STARBOARD, s_throttle);
         ftm_set_duty(&dc_ftm, CH_PORT, p_throttle);
+
+        steering = (steering > 1.0) ? 1.0 : steering;
+        steering = (steering < 0.0) ? 0.0 : steering;
         ftm_set_duty(&servo_ftm, CH_SERVO, TO_SERVO_DUTY(steering));
 
         /* Update LED */
