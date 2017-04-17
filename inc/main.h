@@ -3,7 +3,7 @@
  * contains global macros
  */
  
-#define DEBUG_CAM 0
+#define DEBUG_CAM 1
 #define ENABLE_PRINT 1
 #define SCAN_LEN 128
 

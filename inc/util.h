@@ -6,9 +6,16 @@
 #include "stddef.h"
 
 extern const double HIGH_PASS[];
-extern const double LOW_PASS[];
+extern const double LOW_PASS3[];
+extern const double LOW_PASS5[];
 extern const double DERIVATIVE[];
+extern const double DERIV2[];
 extern const double BOXCAR_4[];
+extern const double BOXCAR_5[];
+extern const double BOXCAR_7[];
+extern const double TRI_5[];
+extern const double GAUSS_SMOOTH_5[];
+extern const double GAUSS_SMOOTH_7[];
 
 #define LINE_START 1
 #define LINE_STOP -1
@@ -65,5 +72,6 @@ void delay(int del);
 
 void slopify(double *dest, const double * const data, const size_t n);
 int center_average(int const * const data, size_t len);
+void amplify(double *dest, const double *const data, const size_t n, int gain);
 
 int int_pow(int base, int exp);

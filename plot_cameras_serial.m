@@ -43,10 +43,10 @@ while (1)
     if serialObject.BytesAvailable
         val = fscanf(serialObject,'%f');
         
-       if ((val == -1) || (val == -3)) % -1 and -3 are start keywords
+       if ((val == -2)) % -1 and -3 are start keywords
             count = 1;
             val
-        elseif (val == -2) % End camera1 tx
+        elseif (val == -3) % End camera1 tx
             if (count == 128)
                 plotdata(trace, 1);
             end %otherwise there was an error and don't plot

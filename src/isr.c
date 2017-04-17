@@ -85,6 +85,9 @@ void ADC0_IRQHandler(void) {
 *		interrupts to control when the line capture occurs
 */
 void PIT0_IRQHandler(void){
+
+    size_t i;
+
 	if (DEBUG_CAM) {
 		// Increment capture counter so that we can only 
 		//	send line data once every ~2 seconds
@@ -95,7 +98,11 @@ void PIT0_IRQHandler(void){
 
     /* Only move new scan into working buffer if existing scan is unprocessed */
     if (!camera.newscan) {
-        memcpy(camera.wbuffer, camera.scan, SCAN_LEN * sizeof(int));
+
+        //memcpy(camera.wbuffer, camera.scan, SCAN_LEN * sizeof(int));
+        for (i = 0; i < SCAN_LEN; i++) {
+            camera.wbuffer[i] = (int) camera.scan[i];
+        }
         camera.newscan = 1;
     }
 

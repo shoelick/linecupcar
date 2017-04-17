@@ -5,7 +5,7 @@ typedef struct camera_driver {
     int pixcnt;
     int capcnt;
     int scan[128];
-    int wbuffer[128];
+    double wbuffer[128];
     int clkval;
     uint8_t newscan;
     ftm_driver *ftm;

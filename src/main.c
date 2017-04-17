@@ -166,35 +166,39 @@ int main() {
 
     while (1) {
 
-        /* Output to UART if enabled */
-        if (DEBUG_CAM) matlab_print();
 
         /* Do camera processing */
         if (camera.newscan) {
 
             // Normalize input
-            i_normalize(&normalized[0], &camera.wbuffer[0], SCAN_LEN);
+            //i_normalize(&normalized[0], &camera.wbuffer[0], SCAN_LEN);
 
-            // Perform low pass for noise cleaning
-            //convolve(&filtered[0], &normalized[0], SCAN_LEN, LOW_PASS, 3);
-            convolve(&filtered[0], &normalized[0], SCAN_LEN, BOXCAR_4, 4);
+            // Perform noise cleaning
+            // 7-point boxcar looking the best 
+            convolve(&filtered[0], &camera.wbuffer[0], SCAN_LEN, BOXCAR_5, 5);
 
-            // Do naiive derivative
-            slopify(&normalized[0], &filtered[0], SCAN_LEN);
-
-            // Perform high pass for derivative 
+            // Get derivative, either naiively or fancily
             // Put back into normalized because we need two separate 
             // buffers
+            //slopify(&normalized[0], &filtered[0], SCAN_LEN);
             //convolve(&normalized[0], &filtered[0], SCAN_LEN, DERIVATIVE, 2);
-            //convolve(&normalized[0], &filtered[0], SCAN_LEN, HIGH_PASS, 3);
+            convolve(&normalized[0], &filtered[0], SCAN_LEN, HIGH_PASS, 3);
+            //convolve(&normalized[0], &filtered[0], SCAN_LEN, DERIV2, 3);
 
-            // Normalize derivative
-            //convolve(&normalized[0], &filtered[0], SCAN_LEN, BOXCAR_4, 4);
-            convolve(&filtered[0], &normalized[0], SCAN_LEN, BOXCAR_4, 4);
-            d_normalize(&normalized[0], &filtered[0], SCAN_LEN);
+            // Stronger noise clean and normalize
+            //convolve(&filtered[0], &normalized[0], SCAN_LEN, GAUSS_SMOOTH_7, 7);
+            convolve(&filtered[0], &normalized[0], SCAN_LEN, BOXCAR_5, 5);
+            convolve(&normalized[0], &filtered[0], SCAN_LEN, LOW_PASS5, 5);
+            d_normalize(normalized, normalized, SCAN_LEN);
+
+            // Amplify?
+            amplify(normalized, normalized, SCAN_LEN, 4);
 
             // Threshold
-            threshold(&processed[0], &normalized[0], SCAN_LEN, 0.5); 
+            threshold(processed, normalized, SCAN_LEN, 0.90); 
+
+            /* Output to UART if enabled */
+            if (DEBUG_CAM) matlab_print();
 
             printu("-------------------\r\n");
             numlines= count_lines(processed, SCAN_LEN);
@@ -261,8 +265,6 @@ int main() {
             if (p_throttle < DC_MAX) p_throttle += 0.05;
             if (s_throttle < DC_MAX) s_throttle += 0.05;
 
-
-
         } else {
 
             // slow down
@@ -317,20 +319,20 @@ void matlab_print() {
     int i;
 
     //if (capcnt >= (2/INTEGRATION_TIME)) {
-    if (camera.capcnt >= (500)) {
+    if (camera.capcnt >= (400)) {
         // Set SI
         //GPIOC_PCOR |= (1 << 4);
         // send the array over uart
-        sprintf(str,"%d\n\r",-1); // start value
+        sprintf(str,"%d\n\r",-2); // start value
         uart_put(str);
         for (i = 0; i < SCAN_LEN - 1; i++) {
-            //sprintf(str,"%d\r\n", camera.wbuffer[i]);
+            //sprintf(str,"%d\r\n", (int) (camera.wbuffer[i] * 10000));
+            //sprintf(str, "%d\r\n", (int) (normalized[i] * 10000.0));
             //sprintf(str,"%d\r\n", (int) (filtered[i] * 100.0));
-            sprintf(str,"%d\r\n", (int) (processed[i]));
-            //sprintf(str, "%d\r\n", (int) (normalized[i] * 1000.0));
+            sprintf(str,"%d\r\n", processed[i]);
             uart_put(str);
         }
-        sprintf(str,"%d\n\r",-2); // end value
+        sprintf(str,"%d\n\r",-3); // end value
         uart_put(str);
         camera.capcnt = 0;
         //GPIOC_PSOR |= (1 << 4);

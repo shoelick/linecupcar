@@ -10,10 +10,17 @@
 #include <util.h>
 #include "uart.h"
 
-const double HIGH_PASS[] = {-1.0, 0, 1.0};
-const double DERIVATIVE[] = {-1.0, 1.0};
-const double LOW_PASS[] = {1.0/3.0, 1.0/3.0, 1.0/3.0};
-const double BOXCAR_4[] = {1, 1, 1, 1};
+const double HIGH_PASS[] = {1.0, 0, -1.0};
+const double DERIVATIVE[] = {1.0, -1.0};
+const double DERIV2[] = {1.0, 2.0, -1.0};
+const double LOW_PASS3[] = {1.0/3.0, 1.0/3.0, 1.0/3.0};
+const double LOW_PASS5[] = {1.0/3.0, 1.0/3.0, 1.0/3.0, 1.0/3.0, 1.0/3.0};
+const double BOXCAR_4[] = {1.0, 1.0, 1.0, 1.0};
+const double BOXCAR_5[] = {1.0, 1.0, 1.0, 1.0, 1.0};
+const double BOXCAR_7[] = {1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0};
+const double TRI_5[] = {1.0,2.0,3.0,2.0,1.0};
+const double GAUSS_SMOOTH_5[] = {1.0,2.0,3.0,2.0,1.0};
+const double GAUSS_SMOOTH_7[] = {1.0,4.0,8.0,10.0,8.0,4.0,1.0};
 
 /* 
  * Convolve data * kernel
@@ -54,7 +61,7 @@ void i_normalize(double *dest, int *data, const size_t n) {
     }
 
     /* Use max at index and save a calculation */
-    scale = 1.0 / data[maxind];
+    scale = 1.0 / fabs(data[maxind]);
 
     /* Normalize */
     for (i = 0; i < n; i++) {
@@ -81,7 +88,7 @@ void d_normalize(double *dest, const double *data, const size_t n) {
 
     /* Normalize */
     for (i = 0; i < n; i++) {
-        dest[i] = fabs(data[i]) * scale;
+        dest[i] = data[i] * scale;
     }
 }
 
@@ -95,10 +102,12 @@ void threshold(int *dest, const double * const data, size_t n, double threshold)
 {
     int i;
     for (i = 0; i < n; i++ ) {
-        if (i < 5 || i > n - 5 ) {
-            dest[i] = 0;
+        if (data[i] <= 0) {
+            // if neg
+            dest[i] = (data[i] > -threshold) ? 0 : -1;
         } else {
-            dest[i] = (data[i] > threshold) ? 1 : 0;
+            // if pos
+            dest[i] = (data[i] < threshold) ? 0 : 1;
         }
     }
 }
@@ -246,15 +255,30 @@ void delay(int del){
  */
 void slopify(double *dest, const double * const data, const size_t n) {
 
-    int i;
+    unsigned int i;
 
-    dest[0] = 0;
-    dest[1] = 0;
-    dest[2] = 0;
-    dest[3] = 0;
-    dest[4] = 0;
-    for (i = 5; i < n; i++) {
-        dest[i] = fabs(data[i] - data[i - 1]);
+    for (i = 1; i < n; i++) {
+        dest[i] = data[i] - data[i - 1];
+    }
+}
+
+/*
+ * Given a signal [-1.0, 1.0], amplify everything and clip at +/- 1.0
+ */
+void amplify(double *dest, const double *const data, const size_t n, int gain) {
+
+    size_t i;
+    double val;
+
+    for (i = 0; i < n; i++) {
+        val = gain * data[i];
+        if (data[i] < 0) {
+            // if neg
+            dest[i] = (val > -1.0) ? val : -1.0;
+        } else {
+            // if pos
+            dest[i] = (val < 1.0) ? val : 1.0;
+        }
     }
 }
 
