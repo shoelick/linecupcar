@@ -10,6 +10,7 @@
 #include <stdint.h>
 
 #include "MK64F12.h"
+extern char str[100];
 
 #define BAUD_RATE 9600      //default baud rate 
 #define UART0_TXRX_ENABLE 0x00C0

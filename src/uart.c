@@ -13,6 +13,8 @@
 
 #include "uart.h"
 
+char str[100]; /* This is used to print from everywhere */
+
 /* 
  * Initialize UART0 hardware
  */

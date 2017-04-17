@@ -9,16 +9,16 @@
  * DISTRIBUTION OF HARDWARE
  *
  * -- Devices
- * 	ADC0: Line scan using channel 0
- * 	FTM0: Line scan using channel 5, drives clock and SI pulse
- * 	FTM2: Servo motor control, using channel 0
- * 	FTM3: DC Motor Control, using channels 0 and 1
+ *  ADC0: Line scan using channel 0
+ *  FTM0: Line scan using channel 5, drives clock and SI pulse
+ *  FTM2: Servo motor control, using channel 0
+ *  FTM3: DC Motor Control, using channels 0 and 1
  *  PIT0: Line scan camera -- triggers line scan 
  *  LED : Running state
  *  Pushbutton: Running control
  *
  * -- Pins
- * 	Starboard motor PWM -------- PTD0  (FTM3_CH0) [EXT]
+ *  Starboard motor PWM -------- PTD0  (FTM3_CH0) [EXT]
  *  Port motor PWM ------------- PTD1  (FTM3_CH1) [EXT]
  *  Servo PWM ------------------ PTB18 (FTM2_CH0) [EXT]
  *  Camera CLK ----------------- PTC1  (GPIO) [EXT]
@@ -49,16 +49,16 @@
 
 unsigned long DEFAULT_SYSTEM_CLOCK = 20485760U;
 
-char str[100]; /* This is used to print from everywhere */
 camera_driver camera; /* Externally defined for use in ISRs */
 
 double normalized[SCAN_LEN];
 double filtered[SCAN_LEN];
 int processed[SCAN_LEN];
 
-/* Macro to turn the setpoint into a servo duty */
 const double SERVO_MIN  = 0.07;
 const double SERVO_MAX  = 0.1042;
+
+/* Macro to turn the setpoint into a servo duty */
 #define TO_SERVO_DUTY(S) ((SERVO_MAX-SERVO_MIN) * S + SERVO_MIN) 
 
 const double DC_MAX = 0.4;
