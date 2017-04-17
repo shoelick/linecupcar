@@ -11,8 +11,8 @@
 #define FTM_ERR_INIT 1
 
 /* Default value values */
-#define DEFAULT_MOD 				 32768
-#define DEFAULT_CN
+#define DEFAULT_MOD 				32768
+#define DEFAULT_CNV                 100
 
 typedef struct ftm_driver {
     FTM_Type *regs;

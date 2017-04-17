@@ -24,8 +24,6 @@ int ftm_init(ftm_driver *drv, int num){
         return FTM_ERR_INIT;
     }
 
-    drv->duty[0] = DEFAULT_CNV;
-
     switch(num) {
 
         /* Set up according to passed FTM number */

@@ -6,10 +6,12 @@
  *
  */
 
-#include "MK64F12.h"
+#include <MK64F12.h>
 #include <stdio.h>
 #include <stdarg.h>
 #include <main.h>
+
+#include "uart.h"
 
 /* 
  * Initialize UART0 hardware
@@ -46,7 +48,7 @@ void uart_init()
     //52-234 in K64 reference manual BRFA is defined by the lower 4 bits of
     //control register, UART0_C4 
     //calculate baud rate settings: ubd = UART module clock/16* baud rate
-    ubd = (uint16_t)((SYS_CLOCK)/(BAUD_RATE * 16));  
+    ubd = (uint16_t)((DEFAULT_SYSTEM_CLOCK)/(BAUD_RATE * 16));  
 
     //clear SBR bits of BDH
     UART0_BDH &= ~UART_BDH_SBR_MASK;
@@ -57,7 +59,7 @@ void uart_init()
 
     //BRFD = (1/32)*BRFA 
     //make the baud rate closer to the desired value by using BRFA
-    brfa = (((SYS_CLOCK*32)/(BAUD_RATE * 16)) / (ubd * 32));
+    brfa = (((DEFAULT_SYSTEM_CLOCK*32)/(BAUD_RATE * 16)) / (ubd * 32));
 
     //write the value of brfa in UART0_C4
     UART0_C4 = (UART_C4_BRFA_MASK & brfa);

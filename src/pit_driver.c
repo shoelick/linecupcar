@@ -1,3 +1,7 @@
+/*
+ * Driver for the periodic interrupt timer.
+ * See header for details.
+ */
 
 #include "MK64F12.h"
 
@@ -5,14 +9,15 @@
 // Determines how high the camera values are
 // Don't exceed 100ms or the caps will saturate
 // Must be above 1.25 ms based on camera clk 
-//	(camera clk is the mod value set in FTM2)
+// (camera clk is the mod value set in FTM)
 #define INTEGRATION_TIME .0075f
 
 #define DEFAULT_SYSTEM_CLOCK 20485760U
 
-/* Initialization of PIT timer to control 
-* 		integration period
-*/
+/* 
+ * Initialization of PIT timer to control 
+ * 		integration period
+ */
 void init_PIT(void){
 	// Setup periodic interrupt timer (PIT)
 	
