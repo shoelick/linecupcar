@@ -10,6 +10,7 @@
 #include <util.h>
 #include "uart.h"
 
+// kernels are delicious 
 const double HIGH_PASS[] = {1.0, 0, -1.0};
 const double DERIVATIVE[] = {1.0, -1.0};
 const double DERIV2[] = {1.0, 2.0, -1.0};
@@ -113,24 +114,6 @@ void threshold(int *dest, const double * const data, size_t n, double threshold)
 }
 
 /*
- * Signed threshold
- * Thresholds the double-array by the given threshold value. 
- * Puts 1s in the destination array where data[i] >= threshold, 
- * -1s in the dest array where data[i] <= -threshold, and 
- * 0s otherwise.
- */
-void sthreshold(double *dest, const double * const data, size_t n, 
-        double threshold)
-{
-    int i;
-    for (i = 0; i < n; i++ ) {
-        if (data[i] > threshold) dest[i] = 1;
-        else if (data[i] < -1 * threshold) dest[i] = -1;
-        else dest[i] = 0;
-    }
-}
-
-/*
  * Takes in the signed threshold'd data and counts the detected black line 
  * blobs.
  */
@@ -189,6 +172,117 @@ int center_average(int const * const data, size_t len) {
 
     return sum / count;
 }
+
+/*
+ * Find largest blob of a given value in a thresholded set of data.
+ * Used to find the right or left lines.
+ * returns index of center if found, -1 if not
+ */
+int find_blob(const int const * data, const size_t len, const int val) {
+  
+    /* Boolean of whether we're currently looking at a blob */
+    uint8_t found_blob = 0;
+
+    /* Used to fight noise; allow spaces between blob vals */
+    int pix_since_last = 0;
+    int newthresh = 30;
+
+    /* loop counter */
+    int i;
+
+    /* Indices of current blob in view */
+    int index_start = 0;
+    int index_of_last = 0;
+
+    /* Indices of the blob we'll care about in the end */
+    int index_start_max = 0;
+    int index_of_end_max = 0;
+
+    /* Minimum width of a blob to be considered */
+    int widththresh = 10;
+    int width;
+
+    int final = 0;
+
+    /* Iterate over every point in the line */
+    for (i = 0; i < len; i++) {
+
+        /* If we come across a [val]... */
+        if (data[i] == val) {
+
+            /* And it's the first one we've seen in a while ...*/
+            if (!found_blob) {
+                //printu("Line start at %d\n\r", i);
+
+                /* Make note we found one */
+                found_blob = 1;
+
+                /* Make note of where it started */
+                index_start = i;
+            } 
+
+            /* Every time we see a val, it's fresh; take note of each one */
+            pix_since_last = 0;
+            index_of_last = i;
+        } 
+        /* Else if we've come across an index which doesn't have [val] but came
+         * right after one.... */
+        else if (data[i] != val && found_blob) {
+
+            /* Check if it's been long enough since we've seen a [val] to record
+             * the last blob we saw and move on */
+            if (pix_since_last > newthresh) {
+                //printu("Line finished at %d\n\r", i); 
+
+                /* Record blob width */
+                width = index_of_last - index_start;
+
+                /* Check if the completed blob was long enough to be kept */
+                if (width > widththresh) {
+                    index_start_max = index_start;
+                    index_of_end_max = index_of_last;
+                    //printu("Sum is now: %d\n\r", sum);
+                } else {
+                    //printu("Line ignored with width %d\n\r", width); 
+                }
+
+                /* Don't count same blob twice nigga */
+                index_of_last = 0; index_start = 0;
+
+                /* no longer tracking a blob */
+                found_blob = 0;
+
+            } else {
+                /* Still tracking the same blob, keep track of how long it's 
+                 * been since we last saw [val]
+                 */
+                pix_since_last++;
+            }
+        }
+    }
+
+    /* See if we finished in the middle of a blob */
+    if (found_blob) {
+
+        /* Record blob width */
+        width = index_of_last - index_start;
+
+        /* Check if the completed blob is was long enough to be kept */
+        if (width > widththresh) {
+            index_start_max = index_start;
+            index_of_end_max = index_of_last;
+            //printu("Sum is now: %d\n\r", sum);
+        } else {
+            //printu("Line ignored with width %d\n\r", width); 
+        }
+    }
+
+    /* Return average of start and end for center, or -1 if we didn't find one*/
+    final = (index_of_end_max - index_start_max) / 2;
+    return (final == 0) ? -1 : final;
+
+}
+
 
 /*
  * Takes in the signed threshold'd data and counts the detected black line 

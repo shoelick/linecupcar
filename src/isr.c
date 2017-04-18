@@ -101,6 +101,7 @@ void PIT0_IRQHandler(void){
 
         //memcpy(camera.wbuffer, camera.scan, SCAN_LEN * sizeof(int));
         for (i = 0; i < SCAN_LEN; i++) {
+            // Copy in everything as a double
             camera.wbuffer[i] = (int) camera.scan[i];
         }
         camera.newscan = 1;

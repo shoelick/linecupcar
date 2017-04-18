@@ -1,7 +1,7 @@
 /* 
  * main.c
  * The main racing program for Imagine RIT Line-Following Car Cup.
- * Author: Michael Shullick
+ * Authors: Michael Shullick, Cindy Gomez
  * April, 2017
  */
 
@@ -51,6 +51,7 @@ unsigned long DEFAULT_SYSTEM_CLOCK = 20485760U;
 
 camera_driver camera; /* Externally defined for use in ISRs */
 
+/* Line scan processing buffers */
 double normalized[SCAN_LEN];
 double filtered[SCAN_LEN];
 int processed[SCAN_LEN];
@@ -58,10 +59,18 @@ int processed[SCAN_LEN];
 const double SERVO_MIN  = 0.07;
 const double SERVO_MAX  = 0.1042;
 
-/* Macro to turn the setpoint into a servo duty */
+/* 
+ * Macro to turn the setpoint into a servo duty 
+ * This way we can think about steering where 0 is the hardest left and 1.0 is
+ * the hardest right.
+ */
 #define TO_SERVO_DUTY(S) ((SERVO_MAX-SERVO_MIN) * S + SERVO_MIN) 
 
-const double DC_MAX = 0.4;
+/*
+ * Max speed [0, 1.0]
+ * Corresponds to FTM duty
+ */
+const double DC_MAX = 0.45;
 
 /* FTM Channels */
 const int CH_STARBOARD = 0;
@@ -82,13 +91,27 @@ int main() {
     /* state management */
     int8_t running = 0, sw;
     uint8_t button_held = 0, state_color = 1, line_detected = 0;
-    long int light_elapsed = 0;
     const long int LIGHT_INT = 3000;
-    int numlines = 0; 
+    long int light_elapsed = 0;
+
+    /* Position tracking */
     int center = 0;
     double position, f_center;
+    double goal = 0.5; // for now, let's stick to staying the middle 
 
-    /* Set camera struct valus */
+    /* 
+     * Using the derivative, we end up producing different values for 
+     * dark-to-light and light-to-dark, corresponding to left and right
+     * respectively.
+     */
+    const int RIGHT_VAL = -1;
+    const int LEFT_VAL = 1;
+    size_t right_ind, left_ind;
+
+    /* PID Constants */
+    const double Kp = 0.8;
+
+    /* Initialize camera struct valus */
     camera.pixcnt = 0;
     camera.capcnt = 0;
     memset(camera.scan, 0, sizeof(camera.scan));
@@ -142,7 +165,7 @@ int main() {
 
     // Configure camera FTM
     ftm_init(&camera_ftm, 0);
-    //ftm_set_frequency(&camera_ftm, 0, 150k);
+    //ftm_set_frequency(&camera_ftm, 0, 150k); // wasn't working?
     ftm_set_mod(&camera_ftm, 0, 100);
     ftm_set_duty(&camera_ftm, 0, 0.5);
     ftm_enable_pwm(&camera_ftm, 0);
@@ -159,87 +182,87 @@ int main() {
     // Set up PIT 
     init_PIT();
 
-
     /***************************************************************************
      * LOOP
      **************************************************************************/
 
     while (1) {
 
-
         /* Do camera processing */
         if (camera.newscan) {
 
-            // Normalize input
-            //i_normalize(&normalized[0], &camera.wbuffer[0], SCAN_LEN);
-
-            // Perform noise cleaning
-            // 7-point boxcar looking the best 
+            /* 
+             * Perform noise cleaning
+             * 5-point boxcar looking the best
+             * TODO: try 7-point?
+             */
             convolve(&filtered[0], &camera.wbuffer[0], SCAN_LEN, BOXCAR_5, 5);
 
-            // Get derivative, either naiively or fancily
-            // Put back into normalized because we need two separate 
-            // buffers
+            /* 
+             * Get derivative, either naiively or fancily
+             * Put back into normalized because we need two separate buffers
+             * A high pass filter seemed to work best as derivative
+             */
             //slopify(&normalized[0], &filtered[0], SCAN_LEN);
             //convolve(&normalized[0], &filtered[0], SCAN_LEN, DERIVATIVE, 2);
             convolve(&normalized[0], &filtered[0], SCAN_LEN, HIGH_PASS, 3);
             //convolve(&normalized[0], &filtered[0], SCAN_LEN, DERIV2, 3);
 
-            // Stronger noise clean and normalize
+            /* 
+             * More noise clean and normalize
+             */
             //convolve(&filtered[0], &normalized[0], SCAN_LEN, GAUSS_SMOOTH_7, 7);
             convolve(&filtered[0], &normalized[0], SCAN_LEN, BOXCAR_5, 5);
             convolve(&normalized[0], &filtered[0], SCAN_LEN, LOW_PASS5, 5);
             d_normalize(normalized, normalized, SCAN_LEN);
 
-            // Amplify?
+            /*
+             * Amplify? Amplify.
+             * Causes definite line blobs to clip and enhances the less 
+             * pronounced dark line blobs
+             */
             amplify(normalized, normalized, SCAN_LEN, 4);
 
-            // Threshold
+            /* 
+             * Threshold for clipped values
+             */
             threshold(processed, normalized, SCAN_LEN, 0.90); 
 
             /* Output to UART if enabled */
             if (DEBUG_CAM) matlab_print();
 
             printu("-------------------\r\n");
-            numlines= count_lines(processed, SCAN_LEN);
+            //numlines= count_lines(processed, SCAN_LEN);
             //printu("Num lines: %d\n\r", numlines); 
 
-            // Find maximum groups
-            if (numlines >= 1) {
+            // Attempt to find left and right line centers
+            right_ind = find_blob(processed, SCAN_LEN, RIGHT_VAL);
+            left_ind = find_blob(processed, SCAN_LEN, LEFT_VAL);
 
-                center = center_average(processed, SCAN_LEN);
+            // If we found either line...
+            if (right_ind + left_ind >= 0) {
 
-               
-                f_center = ((double) center / SCAN_LEN); 
-                
-                printu("center of lines: %d\n\r",  center);
-                printu("Position: %d\n\r", (int) (position * 100));
-                if (numlines == 2) {
-                    steering = f_center; 
-                    position = 1 - steering;
-                } else if (numlines == 1) {
-                    if (position > 0.5) {
-                        steering = position - f_center;
-                    } else {
-                        steering = 1 - (f_center - position);
-                    }
-                } else {
-                    steering = 0.5;
+                // ... and we have both ...
+                if (right_ind != 0 && left_ind != 0) {
+                    // Our position is approximately:
+                    position = 1 - ((right_ind + left_ind) / 2) / SCAN_LEN;
                 }
+                // ... and we have the right one...
+                else if (right_ind != 0) {
 
 
-                printu("steering: 0.%d\n\r",  (int) (steering * 1000));
-                // Check for finish line 
+                }
+                // ... and we have the left one...
+                else if (left_ind != 0) {
 
-                // Try to find left line
 
-                // Try to find right line
+                }
+                
+                printu("Position: %d\n\r",  position);
 
-                // If we have both, find center
+                // TODO: Check for finish line?
 
-                // Otherwise, hug the one we have
-
-                // we found lines 
+                // we found lines; show the blue light
                 line_detected = 1;
             } else {
                 line_detected = 0;
@@ -249,27 +272,24 @@ int main() {
 
             // Allow a new scan
             camera.newscan = 0;
-           
         }
 
-        /* Compute error and update setpoints */
-        if (line_detected) {
+        /* Update steering pid */
+        if (line_detected && running) {
 
-
-
-        }
-
-        if (running) {
+            steering += Kp * (position - goal);
+            printu("steering: 0.%d\n\r",  (int) (steering * 1000));
 
             // update values 
+            // TODO: update these based on steering
             if (p_throttle < DC_MAX) p_throttle += 0.05;
             if (s_throttle < DC_MAX) s_throttle += 0.05;
 
         } else {
 
             // slow down
-            if (p_throttle > 0) p_throttle -= 0.02;
-            if (s_throttle > 0) s_throttle -= 0.02;
+            if (p_throttle > 0) p_throttle -= 0.01;
+            if (s_throttle > 0) s_throttle -= 0.01;
 
             if (p_throttle < 0) p_throttle = 0.00;
             if (s_throttle < 0) s_throttle = 0.00;
@@ -281,6 +301,7 @@ int main() {
         ftm_set_duty(&dc_ftm, CH_STARBOARD, s_throttle);
         ftm_set_duty(&dc_ftm, CH_PORT, p_throttle);
 
+        /* Clip steering within reaonable values */
         steering = (steering > 1.0) ? 1.0 : steering;
         steering = (steering < 0.0) ? 0.0 : steering;
         ftm_set_duty(&servo_ftm, CH_SERVO, TO_SERVO_DUTY(steering));
@@ -301,10 +322,14 @@ int main() {
 
         /* Update state */
         sw = sw_active();
-        if (sw && !button_held) {
+        if (sw && !button_held) { // debounce, kind of
 
             running = !running;
             button_held = 1;
+
+            /* Force light to display new state */
+            state_color = 1;
+            light_elapsed = LIGHT_INT;
 
         } else if (!sw && button_held) button_held = 0;
     }
