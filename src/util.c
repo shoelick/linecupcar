@@ -205,7 +205,7 @@ int find_blob(const int const * data, const size_t len, const int val) {
     int index_of_end_max = 0;
 
     /* Minimum width of a blob to be considered */
-    int widththresh = 5;
+    int widththresh = 0; // DO NOT CHANGE WITHOUT MAKING A BIG DEAL
     int width;
 
     int final = 0;
@@ -277,7 +277,9 @@ int find_blob(const int const * data, const size_t len, const int val) {
         width = index_of_last - index_start;
 
         /* Check if the completed blob is was long enough to be kept */
-        if (width > widththresh) {
+        if (width > widththresh && \
+                index_of_end_max - index_start_max < width) {
+
             index_start_max = index_start;
             index_of_end_max = index_of_last;
             //printu("Sum is now: %d\n\r", sum);
@@ -403,3 +405,15 @@ int int_pow(int base, int exp)
     return result;
 }
 
+double bound(double val, const double min, const double max) {
+
+    if (val > max) {
+        val = max; 
+    }
+    else if (val < min) {
+        val = min;
+    }
+
+    return val;
+
+}

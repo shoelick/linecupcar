@@ -104,7 +104,7 @@ void PIT0_IRQHandler(void){
             // Copy in everything as a double
             camera.wbuffer[i] = (int) camera.scan[i];
         }
-        camera.newscan = 0;
+        camera.newscan = 1;
     }
 
 	// Setting mod resets the FTM counter

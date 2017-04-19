@@ -57,9 +57,10 @@ double normalized[SCAN_LEN];
 double filtered[SCAN_LEN];
 int processed[SCAN_LEN];
 
-const double SERVO_MIN  = 0.060;
-const double SERVO_MAX  = 0.091;
-const double STEER_CENTER = 0.589;
+//const double SERVO_MIN  = 0.0525;
+const double SERVO_MIN  = 0.05;
+const double SERVO_MAX  = 0.097;
+const double STEER_CENTER = 0.6;
 
 /* 
  * Macro to turn the setpoint into a servo duty 
@@ -75,7 +76,7 @@ const double STEER_CENTER = 0.589;
 const double DC_MAX = 0.35;
 
 /* PID Constants */
-const double Kp = 0.85, Ki = 0.1;
+const double Kp = 0.82, Ki = 0.1, Kd = 0.1;
 
 /* FTM Channels */
 const int CH_STARBOARD = 0;
@@ -106,6 +107,7 @@ int main() {
     //int center = 0;
     double position;
     double goal = 0.5; // for now, let's stick to staying the middle 
+    double integral = 0, derivative;
 
     /* 
      * Using the derivative, we end up producing different values for 
@@ -117,7 +119,6 @@ int main() {
     int right_ind, left_ind;
     double right_pos, left_pos, right_d, left_d;
     double c_thresh = 0.25;
-
 
     /* Initialize camera struct valus */
     camera.pixcnt = 0;
@@ -196,11 +197,9 @@ int main() {
 
     while (1) {
 
-        old_steer = steering;
-        old_err = error;
 
         /* Do camera processing */
-        /*if (camera.newscan) {*/
+        if (camera.newscan) {
 
             /* 
              * Perform noise cleaning
@@ -230,7 +229,7 @@ int main() {
              * Causes definite line blobs to clip and enhances the less 
              * pronounced dark line blobs
              */
-            amplify(normalized, normalized, SCAN_LEN, 4);
+            amplify(normalized, normalized, SCAN_LEN, 5);
 
             /* 
              * Threshold for clipped values
@@ -240,6 +239,9 @@ int main() {
             /* Output to UART if enabled */
             if (DEBUG_CAM) matlab_print();
 
+            /*******************************************************************
+             * POSITION CALCULATION
+             ******************************************************************/
             //printu("-------------------\r\n");
             //numlines= count_lines(processed, SCAN_LEN);
             //printu("Num lines: %d\n\r", numlines); 
@@ -258,7 +260,7 @@ int main() {
 
                 // Get each line's distance from the center
                 right_d = fabs(0.5 - right_pos);
-                left_d = fabs(0.5 - left_d);
+                left_d = fabs(0.5 - left_pos);
 
                 // Else if right is close to center  
                 if (right_d < c_thresh) {
@@ -294,30 +296,47 @@ int main() {
 
             } else {
                 line_detected = 0;
-                steering = STEER_CENTER;
-                position = 0.5; // go straight 
+                //steering = STEER_CENTER;
+                //position = 0.5; // go straight 
                 // TODO: Keep track of time we haven't seen a line 
             }
 
             // Allow a new scan to be copied in
             camera.newscan = 0;
-        //}
+        }
 
-        
+        /***********************************************************************
+         * CONTROL LOOP
+         **********************************************************************/
+       
+        /* Record old values */
+        old_steer = steering;
+        old_err = error;
+
+        /* Update error */
         error = goal-position;
-        /* P */
-        steering = 0.5 + Kp * error;
 
-        printu("steering: %d Position * 1000: %d\n\r",  
-                (int) (steering * 1000.0), (int) (position * 1000.0));
+        /* Accumulate error */
+        integral += error;
+        integral = bound(integral, 0, 1);
+
+        derivative = error - old_err;
+
+        /* P */
+        //steering = 0.5 + Kp * error;
+
+        /* PI -- as done by Ptucha */
+        steering = 
+            0.5 + Kp * (error) + 
+            Ki * integral;
+
+
+        /***********************************************************************
+         * HARDWARE UPDATE
+         **********************************************************************/
 
         /* Update steering pid */
         if (running) {
-
-            /* PI */
-            /*steering = old_steer + 0.5 + 
-                Kp * (error - old_err) + 
-                Ki * (error + old_err) / 2;*/
 
             // update values 
             // TODO: update these based on steering
@@ -333,7 +352,7 @@ int main() {
             if (p_throttle < 0) p_throttle = 0.00;
             if (s_throttle < 0) s_throttle = 0.00;
 
-            steering = 0.5;
+            steering = STEER_CENTER;
         }
 
         /* Motors Update */
@@ -341,8 +360,10 @@ int main() {
         ftm_set_duty(&dc_ftm, CH_PORT, p_throttle);
 
         /* Clip steering within reaonable values */
-        steering = (steering > 1.0) ? 1.0 : steering;
-        steering = (steering < 0.0) ? 0.0 : steering;
+        steering = bound(steering, 0, 1);
+        printu("steering: %d Position * 1000: %d\n\r",  
+                (int) (steering * 1000.0), (int) (position * 1000.0));
+
         ftm_set_duty(&servo_ftm, CH_SERVO, TO_SERVO_DUTY(steering));
 
         /* Update LED */

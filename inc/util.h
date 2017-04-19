@@ -65,5 +65,6 @@ void delay(int del);
 void slopify(double *dest, const double * const data, const size_t n);
 int center_average(int const * const data, size_t len);
 void amplify(double *dest, const double *const data, const size_t n, int gain);
+double bound(double val, const double min, const double max);
 
 int int_pow(int base, int exp);
