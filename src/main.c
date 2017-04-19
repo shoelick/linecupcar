@@ -32,6 +32,7 @@
  *****************************************************************************/
 
 /* System includes */
+#include <math.h>
 #include <stdio.h>
 #include <string.h>
 #include <MK64F12.h>
@@ -74,7 +75,7 @@ const double STEER_CENTER = 0.589;
 const double DC_MAX = 0.35;
 
 /* PID Constants */
-const double Kp = 0.85;
+const double Kp = 0.85, Ki = 0.1;
 
 /* FTM Channels */
 const int CH_STARBOARD = 0;
@@ -91,6 +92,9 @@ int main() {
 
     /* Setpoint values */
     double s_throttle = 0.5, p_throttle = 0.5, steering = STEER_CENTER;
+
+    /* old steering and error vars for integral control */
+    double old_steer, old_err, error;
 
     /* state management */
     int8_t running = 0, sw;
@@ -111,7 +115,8 @@ int main() {
     const int RIGHT_VAL = -1;
     const int LEFT_VAL = 1;
     int right_ind, left_ind;
-    double right_pos, left_pos;
+    double right_pos, left_pos, right_d, left_d;
+    double c_thresh = 0.25;
 
 
     /* Initialize camera struct valus */
@@ -191,6 +196,9 @@ int main() {
 
     while (1) {
 
+        old_steer = steering;
+        old_err = error;
+
         /* Do camera processing */
         /*if (camera.newscan) {*/
 
@@ -240,22 +248,40 @@ int main() {
             right_ind = find_blob(processed, SCAN_LEN, RIGHT_VAL);
             left_ind = find_blob(processed, SCAN_LEN, LEFT_VAL);
 
-            printu("Left ind: %d right ind: %d Position * 1000: %d\n\r",  
-                    left_ind, right_ind, (int) (position * 1000.0));
+            right_pos = (double) right_ind / SCAN_LEN;
+            left_pos = (double) left_ind / SCAN_LEN;
 
-            // If we found either line...
-            if (right_ind + left_ind >= 0) {
+            // TODO: Check for finish line?
+            
+            // If we found both lines...
+            if (right_ind != -1 && left_ind != -1) {
 
-                right_pos = (double) right_ind / SCAN_LEN;
-                left_pos = (double) left_ind / SCAN_LEN;
+                // Get each line's distance from the center
+                right_d = fabs(0.5 - right_pos);
+                left_d = fabs(0.5 - left_d);
 
-                // ... and we have both ...
-                if (right_ind != -1 && left_ind != -1) {
-                    // Our position is approximately:
+                // Else if right is close to center  
+                if (right_d < c_thresh) {
+                    // give priority to right line
+                    position = 1 - (right_pos - 0.5);
+                } 
+                else if (left_d < c_thresh) {
+                    // give priority to left line
+                    position = 0.5 - left_pos;
+                } else {
+                     // use the center
                     position = 1 - ((right_pos + left_pos) / 2);
                 }
+
+                // we found lines; show the blue light
+                line_detected = 1;
+            } 
+
+            // else if we found either line  
+            else if (right_ind + left_ind >= 0) {
+
                 // ... and we have the right one...
-                else if (right_ind != -1) {
+                if (right_ind != -1) {
                     position = right_pos + 0.5;
                 }
                 // ... and we have the left one...
@@ -263,10 +289,9 @@ int main() {
                     position = 0.5 - left_pos;
                 }
                 
-                // TODO: Check for finish line?
-
                 // we found lines; show the blue light
                 line_detected = 1;
+
             } else {
                 line_detected = 0;
                 steering = STEER_CENTER;
@@ -279,10 +304,20 @@ int main() {
         //}
 
         
+        error = goal-position;
+        /* P */
+        steering = 0.5 + Kp * error;
+
+        printu("steering: %d Position * 1000: %d\n\r",  
+                (int) (steering * 1000.0), (int) (position * 1000.0));
+
         /* Update steering pid */
         if (running) {
 
-            steering = 0.5 + Kp * (goal - position);
+            /* PI */
+            /*steering = old_steer + 0.5 + 
+                Kp * (error - old_err) + 
+                Ki * (error + old_err) / 2;*/
 
             // update values 
             // TODO: update these based on steering
