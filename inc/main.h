@@ -11,4 +11,5 @@ extern unsigned long DEFAULT_SYSTEM_CLOCK;
 
 /* Used to debug camera processing */
 void matlab_print(void);
+static void hardware_init();
 

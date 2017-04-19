@@ -83,13 +83,14 @@ const int CH_STARBOARD = 0;
 const int CH_PORT = 1;
 const int CH_SERVO = 0;
 
+ftm_driver dc_ftm, servo_ftm, camera_ftm;
+adc_driver adc;
+
 int main() {
 
     /***************************************************************************
      * VARIABLES AND INSTANCES
      **************************************************************************/
-    ftm_driver dc_ftm, servo_ftm, camera_ftm;
-    adc_driver adc;
 
     /* Setpoint values */
     double s_throttle = 0.5, p_throttle = 0.5, steering = STEER_CENTER;
@@ -133,64 +134,7 @@ int main() {
      * CONFIGURATION
      **************************************************************************/
 
-    // Enable clock on GPIO PORTS so it can output
-    SIM_SCGC5 |= SIM_SCGC5_PORTA_MASK | SIM_SCGC5_PORTB_MASK | \
-                 SIM_SCGC5_PORTC_MASK | SIM_SCGC5_PORTD_MASK;
-
-    // Mux all FTMs
-    PORTD_PCR0 = PORT_PCR_MUX(4) | PORT_PCR_DSE_MASK;
-    PORTD_PCR1 = PORT_PCR_MUX(4) | PORT_PCR_DSE_MASK;
-    PORTB_PCR18 = PORT_PCR_MUX(3) | PORT_PCR_DSE_MASK;
-
-    // GPIO camera clk, SI
-    PORTC_PCR1 = PORT_PCR_MUX(1); // CLK
-    PORTC_PCR4 = PORT_PCR_MUX(1); // SI
-    GPIOC_PDDR |= (1 << 1); // Set output
-    GPIOC_PDDR |= (1 << 4);
-    GPIOB_PSOR |= (1 << 1); // Set default value
-    GPIOB_PSOR |= (1 << 4);
-
-    // Initialize the rest of the GPIO for buttons/LEDs
-    led_init();
-    button_init();
-
-    // Initialize uart for debugging
-    uart_init();
-
-    // Configure DC FTM
-    ftm_init(&dc_ftm, 3); /* use ftm3 for dc motors */
-    ftm_set_frequency(&dc_ftm, 0, 10e3);
-    ftm_enable_pwm(&dc_ftm, 0);
-    ftm_enable_pwm(&dc_ftm, 1);
-    ftm_set_duty(&dc_ftm, 0, 0);
-    ftm_set_duty(&dc_ftm, 1, 0);
-    ftm_enable_int(&dc_ftm);
-
-    // Configure Servo FTM
-    ftm_init(&servo_ftm, 2);
-    ftm_set_frequency(&servo_ftm, 3, 50);
-    ftm_enable_pwm(&servo_ftm, 0);
-    ftm_set_duty(&servo_ftm, 0, 0.5);
-    ftm_enable_int(&servo_ftm);
-
-    // Configure camera FTM
-    ftm_init(&camera_ftm, 0);
-    //ftm_set_frequency(&camera_ftm, 0, 150k); // wasn't working?
-    ftm_set_mod(&camera_ftm, 0, 100);
-    ftm_set_duty(&camera_ftm, 0, 0.5);
-    ftm_enable_pwm(&camera_ftm, 0);
-    ftm_enable_cntin_trig(&camera_ftm);
-
-    // Configure camera ADC
-    adc_init(&adc, 0);
-    adc_enable_int(&adc);
-    adc_set_ftm0_trig(&adc);
-
-    // Don't enable FTM interrupts until adc has been initalized
-    ftm_enable_int(&camera_ftm);
-
-    // Set up PIT 
-    init_PIT();
+    hardware_init();
 
     /***************************************************************************
      * LOOP
@@ -388,6 +332,10 @@ int main() {
 
         ftm_set_duty(&servo_ftm, CH_SERVO, TO_SERVO_DUTY(steering));
 
+        /***********************************************************************
+         * STATE AND LED MANAGEMENT 
+         **********************************************************************/
+
         /* Update LED */
         if (light_elapsed >= LIGHT_INT) {
 
@@ -446,3 +394,68 @@ void matlab_print() {
     }
 }
 
+/*
+ * Hardware initialization
+ */
+static void hardware_init() {
+
+    // Enable clock on GPIO PORTS so it can output
+    SIM_SCGC5 |= SIM_SCGC5_PORTA_MASK | SIM_SCGC5_PORTB_MASK | \
+                 SIM_SCGC5_PORTC_MASK | SIM_SCGC5_PORTD_MASK;
+
+    // Mux all FTMs
+    PORTD_PCR0 = PORT_PCR_MUX(4) | PORT_PCR_DSE_MASK;
+    PORTD_PCR1 = PORT_PCR_MUX(4) | PORT_PCR_DSE_MASK;
+    PORTB_PCR18 = PORT_PCR_MUX(3) | PORT_PCR_DSE_MASK;
+
+    // GPIO camera clk, SI
+    PORTC_PCR1 = PORT_PCR_MUX(1); // CLK
+    PORTC_PCR4 = PORT_PCR_MUX(1); // SI
+    GPIOC_PDDR |= (1 << 1); // Set output
+    GPIOC_PDDR |= (1 << 4);
+    GPIOB_PSOR |= (1 << 1); // Set default value
+    GPIOB_PSOR |= (1 << 4);
+
+    // Initialize the rest of the GPIO for buttons/LEDs
+    led_init();
+    button_init();
+
+    // Initialize uart for debugging
+    uart_init();
+
+    // Configure DC FTM
+    ftm_init(&dc_ftm, 3); /* use ftm3 for dc motors */
+    ftm_set_frequency(&dc_ftm, 0, 10e3);
+    ftm_enable_pwm(&dc_ftm, 0);
+    ftm_enable_pwm(&dc_ftm, 1);
+    ftm_set_duty(&dc_ftm, 0, 0);
+    ftm_set_duty(&dc_ftm, 1, 0);
+    ftm_enable_int(&dc_ftm);
+
+    // Configure Servo FTM
+    ftm_init(&servo_ftm, 2);
+    ftm_set_frequency(&servo_ftm, 3, 50);
+    ftm_enable_pwm(&servo_ftm, 0);
+    ftm_set_duty(&servo_ftm, 0, 0.5);
+    ftm_enable_int(&servo_ftm);
+
+    // Configure camera FTM
+    ftm_init(&camera_ftm, 0);
+    //ftm_set_frequency(&camera_ftm, 0, 150k); // wasn't working?
+    ftm_set_mod(&camera_ftm, 0, 100);
+    ftm_set_duty(&camera_ftm, 0, 0.5);
+    ftm_enable_pwm(&camera_ftm, 0);
+    ftm_enable_cntin_trig(&camera_ftm);
+
+    // Configure camera ADC
+    adc_init(&adc, 0);
+    adc_enable_int(&adc);
+    adc_set_ftm0_trig(&adc);
+
+    // Don't enable FTM interrupts until adc has been initalized
+    ftm_enable_int(&camera_ftm);
+
+    // Set up PIT 
+    init_PIT();
+
+}
