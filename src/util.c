@@ -102,7 +102,13 @@ void d_normalize(double *dest, const double *data, const size_t n) {
 void threshold(int *dest, const double * const data, size_t n, double threshold) 
 {
     int i;
+    //int c = 10;
     for (i = 0; i < n; i++ ) {
+
+        // Clip lower to avoid weird bias
+        /*if (i < c) {
+            dest[i] = 0;
+        }*/
         if (data[i] <= 0) {
             // if neg
             dest[i] = (data[i] > -threshold) ? 0 : -1;
@@ -199,10 +205,12 @@ int find_blob(const int const * data, const size_t len, const int val) {
     int index_of_end_max = 0;
 
     /* Minimum width of a blob to be considered */
-    int widththresh = 10;
+    int widththresh = 0;
     int width;
 
     int final = 0;
+
+    //printu("Starting search of val %d\n\r", val);
 
     /* Iterate over every point in the line */
     for (i = 0; i < len; i++) {
@@ -212,7 +220,7 @@ int find_blob(const int const * data, const size_t len, const int val) {
 
             /* And it's the first one we've seen in a while ...*/
             if (!found_blob) {
-                //printu("Line start at %d\n\r", i);
+                //printu("Blob start at %d\n\r", i);
 
                 /* Make note we found one */
                 found_blob = 1;
@@ -232,16 +240,17 @@ int find_blob(const int const * data, const size_t len, const int val) {
             /* Check if it's been long enough since we've seen a [val] to record
              * the last blob we saw and move on */
             if (pix_since_last > newthresh) {
-                //printu("Line finished at %d\n\r", i); 
+                //printu("Blob finished at %d\n\r", i); 
 
                 /* Record blob width */
                 width = index_of_last - index_start;
 
                 /* Check if the completed blob was long enough to be kept */
-                if (width > widththresh) {
+                if (width > widththresh && \ 
+                        index_of_end_max - index_start_max < width) {
+
                     index_start_max = index_start;
                     index_of_end_max = index_of_last;
-                    //printu("Sum is now: %d\n\r", sum);
                 } else {
                     //printu("Line ignored with width %d\n\r", width); 
                 }
@@ -277,8 +286,10 @@ int find_blob(const int const * data, const size_t len, const int val) {
         }
     }
 
+    //printu("Final start: %d Final end: %d\n\r", index_start_max, index_of_end_max);
+
     /* Return average of start and end for center, or -1 if we didn't find one*/
-    final = (index_of_end_max - index_start_max) / 2;
+    final = (index_of_end_max + index_start_max) / 2;
     return (final == 0) ? -1 : final;
 
 }

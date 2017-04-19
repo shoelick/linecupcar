@@ -16,7 +16,7 @@
 %delete(instrfindall)
 %
 
-function plot_cameras_serial
+function plot_camera_serial
 %delete(instrfindall)
 %Send over bluetooth or serial
 %serialPort = 'COM165';

@@ -56,8 +56,9 @@ double normalized[SCAN_LEN];
 double filtered[SCAN_LEN];
 int processed[SCAN_LEN];
 
-const double SERVO_MIN  = 0.07;
-const double SERVO_MAX  = 0.1042;
+const double SERVO_MIN  = 0.060;
+const double SERVO_MAX  = 0.091;
+const double STEER_CENTER = 0.589;
 
 /* 
  * Macro to turn the setpoint into a servo duty 
@@ -70,7 +71,10 @@ const double SERVO_MAX  = 0.1042;
  * Max speed [0, 1.0]
  * Corresponds to FTM duty
  */
-const double DC_MAX = 0.45;
+const double DC_MAX = 0.35;
+
+/* PID Constants */
+const double Kp = 0.85;
 
 /* FTM Channels */
 const int CH_STARBOARD = 0;
@@ -86,17 +90,17 @@ int main() {
     adc_driver adc;
 
     /* Setpoint values */
-    double s_throttle = 0.5, p_throttle = 0.5, steering = 0.5;
+    double s_throttle = 0.5, p_throttle = 0.5, steering = STEER_CENTER;
 
     /* state management */
     int8_t running = 0, sw;
     uint8_t button_held = 0, state_color = 1, line_detected = 0;
-    const long int LIGHT_INT = 3000;
+    const long int LIGHT_INT = 500;
     long int light_elapsed = 0;
 
     /* Position tracking */
-    int center = 0;
-    double position, f_center;
+    //int center = 0;
+    double position;
     double goal = 0.5; // for now, let's stick to staying the middle 
 
     /* 
@@ -106,10 +110,9 @@ int main() {
      */
     const int RIGHT_VAL = -1;
     const int LEFT_VAL = 1;
-    size_t right_ind, left_ind;
+    int right_ind, left_ind;
+    double right_pos, left_pos;
 
-    /* PID Constants */
-    const double Kp = 0.8;
 
     /* Initialize camera struct valus */
     camera.pixcnt = 0;
@@ -189,14 +192,12 @@ int main() {
     while (1) {
 
         /* Do camera processing */
-        if (camera.newscan) {
+        /*if (camera.newscan) {*/
 
             /* 
              * Perform noise cleaning
-             * 5-point boxcar looking the best
-             * TODO: try 7-point?
              */
-            convolve(&filtered[0], &camera.wbuffer[0], SCAN_LEN, BOXCAR_5, 5);
+            convolve(&filtered[0], &camera.wbuffer[0], SCAN_LEN, BOXCAR_4, 4);
 
             /* 
              * Get derivative, either naiively or fancily
@@ -212,8 +213,8 @@ int main() {
              * More noise clean and normalize
              */
             //convolve(&filtered[0], &normalized[0], SCAN_LEN, GAUSS_SMOOTH_7, 7);
-            convolve(&filtered[0], &normalized[0], SCAN_LEN, BOXCAR_5, 5);
-            convolve(&normalized[0], &filtered[0], SCAN_LEN, LOW_PASS5, 5);
+            //convolve(&filtered[0], &normalized[0], SCAN_LEN, BOXCAR_5, 5);
+            //convolve(&normalized[0], &filtered[0], SCAN_LEN, LOW_PASS5, 5);
             d_normalize(normalized, normalized, SCAN_LEN);
 
             /*
@@ -231,7 +232,7 @@ int main() {
             /* Output to UART if enabled */
             if (DEBUG_CAM) matlab_print();
 
-            printu("-------------------\r\n");
+            //printu("-------------------\r\n");
             //numlines= count_lines(processed, SCAN_LEN);
             //printu("Num lines: %d\n\r", numlines); 
 
@@ -239,46 +240,49 @@ int main() {
             right_ind = find_blob(processed, SCAN_LEN, RIGHT_VAL);
             left_ind = find_blob(processed, SCAN_LEN, LEFT_VAL);
 
+            printu("Left ind: %d right ind: %d Position * 1000: %d\n\r",  
+                    left_ind, right_ind, (int) (position * 1000.0));
+
             // If we found either line...
             if (right_ind + left_ind >= 0) {
 
+                right_pos = (double) right_ind / SCAN_LEN;
+                left_pos = (double) left_ind / SCAN_LEN;
+
                 // ... and we have both ...
-                if (right_ind != 0 && left_ind != 0) {
+                if (right_ind != -1 && left_ind != -1) {
                     // Our position is approximately:
-                    position = 1 - ((right_ind + left_ind) / 2) / SCAN_LEN;
+                    position = 1 - ((right_pos + left_pos) / 2);
                 }
                 // ... and we have the right one...
-                else if (right_ind != 0) {
-
-
+                else if (right_ind != -1) {
+                    position = right_pos + 0.5;
                 }
                 // ... and we have the left one...
-                else if (left_ind != 0) {
-
-
+                else if (left_ind != -1) {
+                    position = 0.5 - left_pos;
                 }
                 
-                printu("Position: %d\n\r",  position);
-
                 // TODO: Check for finish line?
 
                 // we found lines; show the blue light
                 line_detected = 1;
             } else {
                 line_detected = 0;
-
+                steering = STEER_CENTER;
+                position = 0.5; // go straight 
                 // TODO: Keep track of time we haven't seen a line 
             }
 
-            // Allow a new scan
+            // Allow a new scan to be copied in
             camera.newscan = 0;
-        }
+        //}
 
+        
         /* Update steering pid */
-        if (line_detected && running) {
+        if (running) {
 
-            steering += Kp * (position - goal);
-            printu("steering: 0.%d\n\r",  (int) (steering * 1000));
+            steering = 0.5 + Kp * (goal - position);
 
             // update values 
             // TODO: update these based on steering

@@ -109,10 +109,11 @@ void uart_put(char *ptr_str)
  */
 void printu(char *format, ...) {
 
-    va_list args;
-    va_start(args, format);
-
-    vsprintf(str, format, args);
-    if (!DEBUG_CAM && ENABLE_PRINT) uart_put(str);
+    if (!DEBUG_CAM && ENABLE_PRINT) { 
+        va_list args;
+        va_start(args, format);
+        uart_put(str);
+        vsprintf(str, format, args);
+    }
 
 }
