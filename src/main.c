@@ -73,10 +73,10 @@ const double STEER_CENTER = 0.6;
  * Max speed [0, 1.0]
  * Corresponds to FTM duty
  */
-const double DC_MAX = 0.35;
+const double DC_MAX = 0.40;
 
 /* PID Constants */
-const double Kp = 0.82, Ki = 0.1, Kd = 0.1;
+const double Kp = 0.65, Ki = 0.05, Kd = 0.1;
 
 /* FTM Channels */
 const int CH_STARBOARD = 0;
@@ -107,6 +107,7 @@ int main() {
     //int center = 0;
     double position;
     double goal = 0.5; // for now, let's stick to staying the middle 
+    double goal_th = 0; // Goal throttle value 
     double integral = 0, derivative;
 
     /* 
@@ -306,7 +307,7 @@ int main() {
         }
 
         /***********************************************************************
-         * CONTROL LOOP
+         * STEERING UPDATE  
          **********************************************************************/
        
         /* Record old values */
@@ -325,10 +326,16 @@ int main() {
         /* P */
         //steering = 0.5 + Kp * error;
 
-        /* PI -- as done by Ptucha */
+        /* PI */
+        /*steering = 
+            0.5 + Kp * (error) + 
+            Ki * integral;*/
+
+        /* PID */
         steering = 
             0.5 + Kp * (error) + 
-            Ki * integral;
+            Ki * integral +
+            Kd * derivative; 
 
 
         /***********************************************************************
@@ -338,14 +345,29 @@ int main() {
         /* Update steering pid */
         if (running) {
 
+            /* Throttle update; only happens when running */
+
+            // constant throttle
+            s_throttle = p_throttle = DC_MAX;
+
+            // Linearly proportional to steering
+            //s_throttle = p_throttle = (1 - fabs(steering - 0.5))/0.5 * DC_MAX;
+
+            // Exponentially proportional to steering?
+            //s_throttle = p_throttle = pow(fabs(steering - 0.5), 2) * DC_MAX;
+
+            // Cap at DC_MAX, just in case
+            s_throttle = bound(s_throttle, 0, DC_MAX);
+            p_throttle = bound(p_throttle, 0, DC_MAX);
+
             // update values 
             // TODO: update these based on steering
-            if (p_throttle < DC_MAX) p_throttle += 0.05;
-            if (s_throttle < DC_MAX) s_throttle += 0.05;
+            if (p_throttle < goal_th) p_throttle += 0.05;
+            if (s_throttle < goal_th) s_throttle += 0.05;
 
         } else {
 
-            // slow down
+            // otherwise slow down
             if (p_throttle > 0) p_throttle -= 0.01;
             if (s_throttle > 0) s_throttle -= 0.01;
 
