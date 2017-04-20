@@ -60,7 +60,7 @@ int processed[SCAN_LEN];
 //const double SERVO_MIN  = 0.0525;
 const double SERVO_MIN  = 0.05;
 const double SERVO_MAX  = 0.097;
-const double STEER_CENTER = 0.6;
+const double STEER_CENTER = 0.5;
 
 /* 
  * Macro to turn the setpoint into a servo duty 
@@ -76,7 +76,7 @@ const double STEER_CENTER = 0.6;
 const double DC_MAX = 0.40;
 
 /* PID Constants */
-const double Kp = 0.65, Ki = 0.05, Kd = 0.1;
+const double Kp = 0.55, Ki = 0.05, Kd = 0.1;
 
 /* FTM Channels */
 const int CH_STARBOARD = 0;
@@ -107,7 +107,7 @@ int main() {
     /* Position tracking */
     //int center = 0;
     double position;
-    double goal = 0.5; // for now, let's stick to staying the middle 
+    double goal = 0.3; // for now, let's stick to staying the middle 
     double goal_th = 0; // Goal throttle value 
     double integral = 0, derivative;
 
@@ -120,7 +120,7 @@ int main() {
     const int LEFT_VAL = 1;
     int right_ind, left_ind;
     double right_pos, left_pos, right_d, left_d;
-    double c_thresh = 0.25;
+    double c_thresh = 0.32;
 
     /* Initialize camera struct valus */
     camera.pixcnt = 0;
@@ -271,15 +271,15 @@ int main() {
         //steering = 0.5 + Kp * error;
 
         /* PI */
-        /*steering = 
-            0.5 + Kp * (error) + 
-            Ki * integral;*/
-
-        /* PID */
         steering = 
             0.5 + Kp * (error) + 
+            Ki * integral;
+
+        /* PID */
+        /*steering = 
+            0.5 + Kp * (error) + 
             Ki * integral +
-            Kd * derivative; 
+            Kd * derivative; */
 
 
         /***********************************************************************
@@ -305,9 +305,10 @@ int main() {
             p_throttle = bound(p_throttle, 0, DC_MAX);
 
             // update values 
+            // TODO: allow for slowing down
             // TODO: update these based on steering
-            if (p_throttle < goal_th) p_throttle += 0.05;
-            if (s_throttle < goal_th) s_throttle += 0.05;
+            //if (p_throttle < goal_th) p_throttle += 0.05;
+            //if (s_throttle < goal_th) s_throttle += 0.05;
 
         } else {
 
