@@ -44,9 +44,15 @@
 #include "adc_driver.h"
 #include "pit_driver.h"
 #include "camera_driver.h"
+#include "rollqueue.h"
 #include "stdlib.h"
 #include "uart.h"
 #include "util.h"
+
+/* Used to debug camera processing */
+static void matlab_print(void);
+
+static void hardware_init();
 
 unsigned long DEFAULT_SYSTEM_CLOCK = 20485760U;
 
@@ -73,18 +79,24 @@ const double STEER_CENTER = 0.5;
  * Max speed [0, 1.0]
  * Corresponds to FTM duty
  */
-const double DC_MAX = 0.40;
+const double DC_MAX = 0.38;
+const double DC_MIN = 0.25;
 
 /* PID Constants */
-const double Kp = 0.55, Ki = 0.05, Kd = 0.1;
+const double Kp = 0.65, Ki = 0.05, Kd = 0.1;
 
 /* FTM Channels */
 const int CH_STARBOARD = 0;
 const int CH_PORT = 1;
 const int CH_SERVO = 0;
 
+/* Goal bounds */
+const double LEFT_BOUND = 0.00;
+const double RIGHT_BOUND = 0.6;
+
 ftm_driver dc_ftm, servo_ftm, camera_ftm;
 adc_driver adc;
+uart_driver cam_uart, bt_uart;
 
 int main() {
 
@@ -96,13 +108,14 @@ int main() {
     double s_throttle = 0.5, p_throttle = 0.5, steering = STEER_CENTER;
 
     /* old steering and error vars for integral control */
-    double old_steer, old_err, error;
+    double old_err, error;
 
     /* state management */
     int8_t running = 0, sw;
     uint8_t button_held = 0, state_color = 1, line_detected = 0;
     const long int LIGHT_INT = 500;
     long int light_elapsed = 0;
+    uint8_t sys_error = 0;
 
     /* Position tracking */
     //int center = 0;
@@ -110,6 +123,7 @@ int main() {
     double goal = 0.3; // for now, let's stick to staying the middle 
     double goal_th = 0; // Goal throttle value 
     double integral = 0, derivative;
+    rollqueue steer_hist;
 
     /* 
      * Using the derivative, we end up producing different values for 
@@ -130,6 +144,9 @@ int main() {
     camera.ftm = &camera_ftm;
     camera.adc = &adc;
 
+    /* Initialize rolling steer history */
+    sys_error = init_rollqueue(&steer_hist, 20);
+
     /***************************************************************************
      * CONFIGURATION
      **************************************************************************/
@@ -140,7 +157,7 @@ int main() {
      * LOOP
      **************************************************************************/
 
-    while (1) {
+    while (!sys_error) {
 
 
         /* Do camera processing */
@@ -241,8 +258,8 @@ int main() {
 
             } else {
                 line_detected = 0;
-                //steering = STEER_CENTER;
-                //position = 0.5; // go straight 
+                steering = STEER_CENTER;
+                position = 0.5; // go straight 
                 // TODO: Keep track of time we haven't seen a line 
             }
 
@@ -255,7 +272,6 @@ int main() {
          **********************************************************************/
        
         /* Record old values */
-        old_steer = steering;
         old_err = error;
 
         /* Update error */
@@ -281,6 +297,8 @@ int main() {
             Ki * integral +
             Kd * derivative; */
 
+        //goal = (RIGHT_BOUND - LEFT_BOUND) * (steering) + LEFT_BOUND;
+        add_data(&steer_hist, steering);
 
         /***********************************************************************
          * HARDWARE UPDATE
@@ -292,10 +310,11 @@ int main() {
             /* Throttle update; only happens when running */
 
             // constant throttle
-            s_throttle = p_throttle = DC_MAX;
+            //s_throttle = p_throttle = DC_MAX;
 
             // Linearly proportional to steering
-            //s_throttle = p_throttle = (1 - fabs(steering - 0.5))/0.5 * DC_MAX;
+            s_throttle = p_throttle = (DC_MAX-DC_MIN) * \
+                (1 - (fabs(steering - 0.5) / 0.5) ) + DC_MIN;
 
             // Exponentially proportional to steering?
             //s_throttle = p_throttle = pow(fabs(steering - 0.5), 2) * DC_MAX;
@@ -328,8 +347,8 @@ int main() {
 
         /* Clip steering within reaonable values */
         steering = bound(steering, 0, 1);
-        printu("steering: %d Position * 1000: %d\n\r",  
-                (int) (steering * 1000.0), (int) (position * 1000.0));
+        printu(&bt_uart, "Goal: %d Position * 1000: %d\n\r",  
+                (int) (goal * 1000.0), (int) (position * 1000.0));
 
         ftm_set_duty(&servo_ftm, CH_SERVO, TO_SERVO_DUTY(steering));
 
@@ -371,7 +390,7 @@ int main() {
  * This function prints out camera values in a format expected by a listening 
  * matlab instance.
  */
-void matlab_print() {
+static void matlab_print() {
     int i;
 
     //if (capcnt >= (2/INTEGRATION_TIME)) {
@@ -380,16 +399,16 @@ void matlab_print() {
         //GPIOC_PCOR |= (1 << 4);
         // send the array over uart
         sprintf(str,"%d\n\r",-2); // start value
-        uart_put(str);
+        uart_put(&cam_uart, str);
         for (i = 0; i < SCAN_LEN - 1; i++) {
             //sprintf(str,"%d\r\n", (int) (camera.wbuffer[i] * 10000));
             //sprintf(str, "%d\r\n", (int) (normalized[i] * 10000.0));
             //sprintf(str,"%d\r\n", (int) (filtered[i] * 100.0));
             sprintf(str,"%d\r\n", processed[i]);
-            uart_put(str);
+            uart_put(&cam_uart, str);
         }
         sprintf(str,"%d\n\r",-3); // end value
-        uart_put(str);
+        uart_put(&cam_uart, str);
         camera.capcnt = 0;
         //GPIOC_PSOR |= (1 << 4);
     }
@@ -422,7 +441,8 @@ static void hardware_init() {
     button_init();
 
     // Initialize uart for debugging
-    uart_init();
+    uart_init(&cam_uart, 0);
+    uart_init(&bt_uart, 3);
 
     // Configure DC FTM
     ftm_init(&dc_ftm, 3); /* use ftm3 for dc motors */
