@@ -80,7 +80,7 @@ const double STEER_CENTER = 0.5;
  * Max speed [0, 1.0]
  * Corresponds to FTM duty
  */
-const double DC_MAX = 0.45;
+const double DC_MAX = 0.50;
 //const double DC_MAX = 0.3;
 const double DC_MIN = 0.25;
 
@@ -95,8 +95,8 @@ const int PORT_CH_FWD = 1;
 const int PORT_CH_BACK = 5;
 
 /* Goal bounds */
-const double LEFT_BOUND = 0.00;
-const double RIGHT_BOUND = 0.6;
+const double LEFT_BOUND = 0.3;
+const double RIGHT_BOUND = 0.8;
 
 ftm_driver dc_ftm, servo_ftm, camera_ftm;
 adc_driver adc;
@@ -115,7 +115,7 @@ int main() {
     double steering = STEER_CENTER;
 
     /* old steering and error vars for integral control */
-    double old_err, error;
+    double error;
 
     /* state management */
     int8_t running = 0, sw;
@@ -127,9 +127,8 @@ int main() {
     /* Position tracking */
     //int center = 0;
     double position;
-    double goal = 0.3; // for now, let's stick to staying the middle 
-    double integral = 0, derivative;
-    rollqueue steer_hist;
+    double goal = 0.50; // for now, let's stick to staying the middle 
+    rollqueue steer_hist, error_hist, int_hist;
 
     /* 
      * Using the derivative, we end up producing different values for 
@@ -140,7 +139,7 @@ int main() {
     const int LEFT_VAL = -1;
     int right_ind, left_ind;
     double right_pos, left_pos, right_d, left_d;
-    double c_thresh = 0.35;
+    double c_thresh = 0.32;
 
     /* Initialize camera struct valus */
     camera.pixcnt = 0;
@@ -151,7 +150,8 @@ int main() {
     camera.adc = &adc;
 
     /* Initialize rolling steer history */
-    sys_error = init_rollqueue(&steer_hist, 20);
+    sys_error = init_rollqueue(&steer_hist, 10);
+    sys_error = init_rollqueue(&error_hist, 4);
 
     /***************************************************************************
      * CONFIGURATION
@@ -188,16 +188,16 @@ int main() {
              * More noise clean and normalize
              */
             //convolve(&filtered[0], &normalized[0], SCAN_LEN, GAUSS_SMOOTH_7, 7);
-            //convolve(&filtered[0], &normalized[0], SCAN_LEN, BOXCAR_5, 5);
+            convolve(filtered, normalized, SCAN_LEN, BOXCAR_5, 5);
             //convolve(&normalized[0], &filtered[0], SCAN_LEN, LOW_PASS5, 5);
-            d_normalize(normalized, normalized, SCAN_LEN);
+            d_normalize(normalized, filtered, SCAN_LEN);
 
             /*
              * Amplify? Amplify.
              * Causes definite line blobs to clip and enhances the less 
              * pronounced dark line blobs
              */
-            amplify(normalized, normalized, SCAN_LEN, 5);
+            amplify(normalized, normalized, SCAN_LEN, 6.5);
 
             /* 
              * Threshold for clipped values
@@ -278,24 +278,24 @@ int main() {
          **********************************************************************/
        
         /* Record old values */
-        old_err = error;
+        /*old_err = error;*/
 
         /* Update error */
         error = goal-position;
 
         /* Accumulate error */
-        integral += error;
-        integral = bound(integral, 0, 1);
+        /*integral += error;
+        integral = bound(integral, 0, 1);*/
 
-        derivative = error - old_err;
+        /*derivative = error - old_err;*/
 
         /* P */
-        steering = 0.5 + Kp * error;
+        steering = 0.5 + Kp * get_average(&error_hist);
 
         /* PI */
-        steering = 
+        /*steering = 
             0.5 + Kp * (error) + 
-            Ki * integral;
+            Ki * get_average(&error_hist);*/
 
         /* PID */
         /*steering = 
@@ -303,8 +303,10 @@ int main() {
             Ki * integral +
             Kd * derivative; */
 
-        //goal = (RIGHT_BOUND - LEFT_BOUND) * (steering) + LEFT_BOUND;
+        /*goal = (RIGHT_BOUND - LEFT_BOUND) * (get_average(&steer_hist)) + \
+            LEFT_BOUND;*/
         add_data(&steer_hist, steering);
+        add_data(&error_hist, error);
 
         /***********************************************************************
          * HARDWARE UPDATE
@@ -359,7 +361,6 @@ int main() {
         steering = bound(steering, 0, 1);
         ftm_set_duty(&servo_ftm, CH_SERVO, TO_SERVO_DUTY(steering));
 
-
         /***********************************************************************
          * STATUS REPORT
          **********************************************************************/
@@ -371,12 +372,18 @@ int main() {
                 (int) (goal * 1000), (int) (position * 1000), (int) (steering * 1000), 
                 (int) (p_throttle * 1000), (int) (pg_throttle * 1000),
                 (int) (s_throttle * 1000), (int) (sg_throttle * 1000));*/
+
+        /*print_serial(&bt_uart, \
+                "Position: %d Steering %d Error: %d\n\r",
+                (int) (1000 * position), (int) (1000 * steering),
+                (int) (1000 * error));*/
+
         print_serial(&bt_uart, \
                 "Left pos: %d Left distance: %d Right pos: %d " \
-                "Right distance %d position: %d\n\r", (int) (left_pos * 1000),
-                (int) (left_d * 1000), (int) (right_pos * 1000), 
-                (int) (right_d * 1000),
-                (int) (position * 1000));
+                "Right distance %d position: %d error: %d\n\r", 
+                (int) (left_pos * 1000), (int) (left_d * 1000), 
+                (int) (right_pos * 1000), (int) (right_d * 1000),
+                (int) (position * 1000), (int) (error * 1000));
 
         /***********************************************************************
          * STATE AND LED MANAGEMENT 
@@ -426,8 +433,8 @@ static void matlab_print() { int i;
         uart_put(&cam_uart, str);
         for (i = 0; i < SCAN_LEN - 1; i++) {
             //sprintf(str,"%d\r\n", (int) (camera.wbuffer[i] * 10000));
-            //sprintf(str, "%d\r\n", (int) (normalized[i] * 10000.0));
             //sprintf(str,"%d\r\n", (int) (filtered[i] * 100.0));
+            //sprintf(str, "%d\r\n", (int) (normalized[i] * 1000.0));
             sprintf(str,"%d\r\n", processed[i]);
             uart_put(&cam_uart, str);
         }

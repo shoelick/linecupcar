@@ -36,7 +36,7 @@ int add_data(rollqueue *d, const double val) {
 
 double get_average(const rollqueue const *d) {
 
-    int sum = 0;
+    double sum = 0;
 
     for (int i = 0; i < d->len; i++) {
         sum += d->data[i];
