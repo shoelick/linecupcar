@@ -80,11 +80,12 @@ const double STEER_CENTER = 0.5;
  * Max speed [0, 1.0]
  * Corresponds to FTM duty
  */
-const double DC_MAX = 0.50;
+const double DC_MAX = 0.45;
+//const double DC_MAX = 0.3;
 const double DC_MIN = 0.25;
 
 /* PID Constants */
-const double Kp = 0.60, Ki = 0.05, Kd = 0.1;
+const double Kp = 0.65, Ki = 0.05, Kd = 0.1;
 
 /* FTM Channels */
 const int CH_SERVO = 0;
@@ -135,11 +136,11 @@ int main() {
      * dark-to-light and light-to-dark, corresponding to left and right
      * respectively.
      */
-    const int RIGHT_VAL = -1;
-    const int LEFT_VAL = 1;
+    const int RIGHT_VAL = 1;
+    const int LEFT_VAL = -1;
     int right_ind, left_ind;
     double right_pos, left_pos, right_d, left_d;
-    double c_thresh = 0.32;
+    double c_thresh = 0.35;
 
     /* Initialize camera struct valus */
     camera.pixcnt = 0;
@@ -232,11 +233,11 @@ int main() {
                 // Else if right is close to center  
                 if (right_d < c_thresh) {
                     // give priority to right line
-                    position = 1 - (right_pos - 0.5);
+                    position = (0.5 + right_pos);
                 } 
                 else if (left_d < c_thresh) {
                     // give priority to left line
-                    position = 0.5 - left_pos;
+                    position = (left_pos - 0.5);
                 } else {
                      // use the center
                     position = 1 - ((right_pos + left_pos) / 2);
@@ -289,7 +290,7 @@ int main() {
         derivative = error - old_err;
 
         /* P */
-        //steering = 0.5 + Kp * error;
+        steering = 0.5 + Kp * error;
 
         /* PI */
         steering = 
@@ -343,7 +344,7 @@ int main() {
             //if (s_throttle < 0) s_throttle = 0.00;
             
             p_throttle = s_throttle = 0.0;
-            pbwd_throttle = sbwd_throttle = 0.2;
+            pbwd_throttle = sbwd_throttle = 0.0;
 
             steering = STEER_CENTER;
         }
@@ -363,13 +364,19 @@ int main() {
          * STATUS REPORT
          **********************************************************************/
 
-        print_serial(&bt_uart, \
+        /*print_serial(&bt_uart, \
                 "Goal: %5d Position: %5d Steer: %5d " \
                 "Port Throttle (actual / goal): %5d / %-5d " \
                 "Starboard Throttle (actual / goal): %5d / %-5d \r\n",
-                (int) (steering * 1000), (int) (goal * 1000), (int) (position * 1000), 
+                (int) (goal * 1000), (int) (position * 1000), (int) (steering * 1000), 
                 (int) (p_throttle * 1000), (int) (pg_throttle * 1000),
-                (int) (s_throttle * 1000), (int) (sg_throttle * 1000));
+                (int) (s_throttle * 1000), (int) (sg_throttle * 1000));*/
+        print_serial(&bt_uart, \
+                "Left pos: %d Left distance: %d Right pos: %d " \
+                "Right distance %d position: %d\n\r", (int) (left_pos * 1000),
+                (int) (left_d * 1000), (int) (right_pos * 1000), 
+                (int) (right_d * 1000),
+                (int) (position * 1000));
 
         /***********************************************************************
          * STATE AND LED MANAGEMENT 
@@ -409,9 +416,7 @@ int main() {
  * This function prints out camera values in a format expected by a listening 
  * matlab instance.
  */
-static void matlab_print() {
-    int i;
-
+static void matlab_print() { int i; 
     //if (capcnt >= (2/INTEGRATION_TIME)) {
     if (camera.capcnt >= (400)) {
         // Set SI
