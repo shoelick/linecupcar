@@ -80,12 +80,12 @@ const double STEER_CENTER = 0.5;
  * Max speed [0, 1.0]
  * Corresponds to FTM duty
  */
-const double DC_MAX = 0.50;
+const double DC_MAX = 0.52;
 //const double DC_MAX = 0.3;
 const double DC_MIN = 0.25;
 
 /* PID Constants */
-const double Kp = 0.65, Ki = 0.05, Kd = 0.1;
+const double Kp = 0.55, Ki = 0.05, Kd = 0.1;
 
 /* FTM Channels */
 const int CH_SERVO = 0;
@@ -139,7 +139,7 @@ int main() {
     const int LEFT_VAL = -1;
     int right_ind, left_ind;
     double right_pos, left_pos, right_d, left_d;
-    double c_thresh = 0.32;
+    double c_thresh = 0.3;
 
     /* Initialize camera struct valus */
     camera.pixcnt = 0;
@@ -151,7 +151,7 @@ int main() {
 
     /* Initialize rolling steer history */
     sys_error = init_rollqueue(&steer_hist, 10);
-    sys_error = init_rollqueue(&error_hist, 4);
+    sys_error = init_rollqueue(&error_hist, 7);
 
     /***************************************************************************
      * CONFIGURATION
