@@ -12,14 +12,14 @@ Info : Probing flash info for bank 0
 undefined debug reason 7 - target needs reset
 Info : MDM: Chip is unsecured. Continuing.
 target halted due to debug-request, current mode: Thread 
-xPSR: 0x01000000 pc: 0x00002140 msp: 0x20030000
+xPSR: 0x01000000 pc: 0x00002298 msp: 0x20030000
 Info : MDM: Chip is unsecured. Continuing.
 target halted due to debug-request, current mode: Thread 
-xPSR: 0x01000000 pc: 0x00002140 msp: 0x20030000
+xPSR: 0x01000000 pc: 0x00002298 msp: 0x20030000
 Info : Padding image section 0 with 616 bytes
 Warn : Flash Configuration Field written.
 Warn : Reset or power off the device to make settings effective.
-Warn : keep_alive() was not invoked in the 1000ms timelimit. GDB alive packet not sent! (1024). Workaround: increase "set remotetimeout" in GDB
+Warn : keep_alive() was not invoked in the 1000ms timelimit. GDB alive packet not sent! (1068). Workaround: increase "set remotetimeout" in GDB
 Info : MDM: Chip is unsecured. Continuing.
 target halted due to debug-request, current mode: Thread 
-xPSR: 0x01000000 pc: 0x000020c4 msp: 0x20030000
+xPSR: 0x01000000 pc: 0x000022a0 msp: 0x20030000

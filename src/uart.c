@@ -9,6 +9,7 @@
 #include <MK64F12.h>
 #include <stdio.h>
 #include <stdarg.h>
+#include <string.h>
 #include <main.h>
 
 #include "uart.h"
@@ -22,6 +23,10 @@ int uart_init(uart_driver *drv, int num)
 {
     //define variables for baud rate and baud rate fine adjust
     uint16_t ubd, brfa;
+
+    if (drv == NULL) {
+        return 2;
+    }
 
     switch (num) {
 
@@ -46,8 +51,8 @@ int uart_init(uart_driver *drv, int num)
             // PTB10 & PTB11
             SIM_SCGC4 |= SIM_SCGC4_UART3_MASK;
             SIM_SCGC5 |= SIM_SCGC5_PORTB_MASK; 
-            PORTB_PCR10 = PORT_PCR_MUX(3); 
-            PORTB_PCR11 = PORT_PCR_MUX(3);
+            PORTB_PCR10 = PORT_PCR_MUX(3);  // RX 
+            PORTB_PCR11 = PORT_PCR_MUX(3);  // TX
             break;
         case 4:
             drv->regs = UART4; 
@@ -139,8 +144,40 @@ void printu(uart_driver *drv, char *format, ...) {
     if (!DEBUG_CAM && ENABLE_PRINT) { 
         va_list args;
         va_start(args, format);
-        uart_put(drv, str);
         vsprintf(str, format, args);
+        uart_put(drv, str);
     }
 
+}
+
+void print_serial(uart_driver *drv, char *format, ...) {
+
+    static int ind = 0;
+    static int len = 0;
+    int i;
+    va_list args;
+
+    if (!ENABLE_PRINT) return;
+
+    if (drv == NULL || format == NULL) {
+        return;
+    }
+
+    // Use the next string if and only if we're done with the last
+    if (ind >= len) {
+        va_start(args, format);
+        vsnprintf(drv->buffer, BUFLEN, format, args);
+        len = strlen(drv->buffer);
+        ind = 0;
+    } 
+
+    // print this many chars at a time
+    for (i = 0; i < 10 && ind < len; i++) {
+        uart_putchar(drv, drv->buffer[ind++]);
+        uart_putchar(drv, drv->buffer[ind++]);
+        uart_putchar(drv, drv->buffer[ind++]);
+        uart_putchar(drv, drv->buffer[ind++]);
+        uart_putchar(drv, drv->buffer[ind++]);
+    }
+    return;
 }

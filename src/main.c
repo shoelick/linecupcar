@@ -18,8 +18,10 @@
  *  Pushbutton: Running control
  *
  * -- Pins
- *  Starboard motor PWM -------- PTD0  (FTM3_CH0) [EXT]
- *  Port motor PWM ------------- PTD1  (FTM3_CH1) [EXT]
+ *  Starboard motor PWM FWD ---- PTD0  (FTM3_CH0) [EXT] 
+ *  Starboard motor PWM BWD ---- PTC8  (FTM3_CH4) [EXT] 
+ *  Port motor PWM FWD --------- PTD1  (FTM3_CH1) [EXT]
+ *  Port motor PWM BWD --------- PTC9  (FTM3_CH5) [EXT]
  *  Servo PWM ------------------ PTB18 (FTM2_CH0) [EXT]
  *  Camera CLK ----------------- PTC1  (GPIO) [EXT]
  *  Camera SI ------------------ PTC4  (GPIO) [EXT]
@@ -51,7 +53,6 @@
 
 /* Used to debug camera processing */
 static void matlab_print(void);
-
 static void hardware_init();
 
 unsigned long DEFAULT_SYSTEM_CLOCK = 20485760U;
@@ -79,16 +80,18 @@ const double STEER_CENTER = 0.5;
  * Max speed [0, 1.0]
  * Corresponds to FTM duty
  */
-const double DC_MAX = 0.38;
+const double DC_MAX = 0.50;
 const double DC_MIN = 0.25;
 
 /* PID Constants */
-const double Kp = 0.65, Ki = 0.05, Kd = 0.1;
+const double Kp = 0.60, Ki = 0.05, Kd = 0.1;
 
 /* FTM Channels */
-const int CH_STARBOARD = 0;
-const int CH_PORT = 1;
 const int CH_SERVO = 0;
+const int STAR_CH_FWD = 0;
+const int STAR_CH_BACK = 4;
+const int PORT_CH_FWD = 1;
+const int PORT_CH_BACK = 5;
 
 /* Goal bounds */
 const double LEFT_BOUND = 0.00;
@@ -105,7 +108,10 @@ int main() {
      **************************************************************************/
 
     /* Setpoint values */
-    double s_throttle = 0.5, p_throttle = 0.5, steering = STEER_CENTER;
+    double s_throttle = 0.0, p_throttle = 0.0; // current fwd
+    double sbwd_throttle = 0.0, pbwd_throttle = 0.0; // current bwd
+    double sg_throttle = 0.0, pg_throttle = 0.0;  // goal
+    double steering = STEER_CENTER;
 
     /* old steering and error vars for integral control */
     double old_err, error;
@@ -121,7 +127,6 @@ int main() {
     //int center = 0;
     double position;
     double goal = 0.3; // for now, let's stick to staying the middle 
-    double goal_th = 0; // Goal throttle value 
     double integral = 0, derivative;
     rollqueue steer_hist;
 
@@ -313,44 +318,58 @@ int main() {
             //s_throttle = p_throttle = DC_MAX;
 
             // Linearly proportional to steering
-            s_throttle = p_throttle = (DC_MAX-DC_MIN) * \
+            sg_throttle = pg_throttle = (DC_MAX-DC_MIN) * \
                 (1 - (fabs(steering - 0.5) / 0.5) ) + DC_MIN;
 
             // Exponentially proportional to steering?
             //s_throttle = p_throttle = pow(fabs(steering - 0.5), 2) * DC_MAX;
 
             // Cap at DC_MAX, just in case
-            s_throttle = bound(s_throttle, 0, DC_MAX);
-            p_throttle = bound(p_throttle, 0, DC_MAX);
+            sg_throttle = bound(sg_throttle, 0, DC_MAX);
+            pg_throttle = bound(pg_throttle, 0, DC_MAX);
 
             // update values 
-            // TODO: allow for slowing down
-            // TODO: update these based on steering
-            //if (p_throttle < goal_th) p_throttle += 0.05;
-            //if (s_throttle < goal_th) s_throttle += 0.05;
-
+            p_throttle += (pg_throttle - p_throttle) * 0.1;
+            s_throttle += (sg_throttle - s_throttle) * 0.1;
+            
+            pbwd_throttle = sbwd_throttle = 0.0;
         } else {
 
             // otherwise slow down
-            if (p_throttle > 0) p_throttle -= 0.01;
-            if (s_throttle > 0) s_throttle -= 0.01;
+            //if (p_throttle > 0) p_throttle -= 0.01;
+            //if (s_throttle > 0) s_throttle -= 0.01;
 
-            if (p_throttle < 0) p_throttle = 0.00;
-            if (s_throttle < 0) s_throttle = 0.00;
+            //if (p_throttle < 0) p_throttle = 0.00;
+            //if (s_throttle < 0) s_throttle = 0.00;
+            
+            p_throttle = s_throttle = 0.0;
+            pbwd_throttle = sbwd_throttle = 0.2;
 
             steering = STEER_CENTER;
         }
 
         /* Motors Update */
-        ftm_set_duty(&dc_ftm, CH_STARBOARD, s_throttle);
-        ftm_set_duty(&dc_ftm, CH_PORT, p_throttle);
+        ftm_set_duty(&dc_ftm, STAR_CH_FWD, s_throttle);
+        ftm_set_duty(&dc_ftm, PORT_CH_FWD, p_throttle);
+        ftm_set_duty(&dc_ftm, STAR_CH_BACK, sbwd_throttle);
+        ftm_set_duty(&dc_ftm, PORT_CH_BACK, pbwd_throttle);
 
         /* Clip steering within reaonable values */
         steering = bound(steering, 0, 1);
-        printu(&bt_uart, "Goal: %d Position * 1000: %d\n\r",  
-                (int) (goal * 1000.0), (int) (position * 1000.0));
-
         ftm_set_duty(&servo_ftm, CH_SERVO, TO_SERVO_DUTY(steering));
+
+
+        /***********************************************************************
+         * STATUS REPORT
+         **********************************************************************/
+
+        print_serial(&bt_uart, \
+                "Goal: %5d Position: %5d Steer: %5d " \
+                "Port Throttle (actual / goal): %5d / %-5d " \
+                "Starboard Throttle (actual / goal): %5d / %-5d \r\n",
+                (int) (steering * 1000), (int) (goal * 1000), (int) (position * 1000), 
+                (int) (p_throttle * 1000), (int) (pg_throttle * 1000),
+                (int) (s_throttle * 1000), (int) (sg_throttle * 1000));
 
         /***********************************************************************
          * STATE AND LED MANAGEMENT 
@@ -424,9 +443,12 @@ static void hardware_init() {
                  SIM_SCGC5_PORTC_MASK | SIM_SCGC5_PORTD_MASK;
 
     // Mux all FTMs
-    PORTD_PCR0 = PORT_PCR_MUX(4) | PORT_PCR_DSE_MASK;
-    PORTD_PCR1 = PORT_PCR_MUX(4) | PORT_PCR_DSE_MASK;
-    PORTB_PCR18 = PORT_PCR_MUX(3) | PORT_PCR_DSE_MASK;
+    PORTD_PCR0 = PORT_PCR_MUX(4) | PORT_PCR_DSE_MASK; // Starboard Forward
+    PORTD_PCR1 = PORT_PCR_MUX(4) | PORT_PCR_DSE_MASK; // Port Forward 
+    PORTC_PCR8 = PORT_PCR_MUX(3) | PORT_PCR_DSE_MASK; // Starboard backward
+    PORTC_PCR9 = PORT_PCR_MUX(3) | PORT_PCR_DSE_MASK; // Port backward
+
+    PORTB_PCR18 = PORT_PCR_MUX(3) | PORT_PCR_DSE_MASK; // Servo
 
     // GPIO camera clk, SI
     PORTC_PCR1 = PORT_PCR_MUX(1); // CLK
@@ -447,10 +469,14 @@ static void hardware_init() {
     // Configure DC FTM
     ftm_init(&dc_ftm, 3); /* use ftm3 for dc motors */
     ftm_set_frequency(&dc_ftm, 0, 10e3);
-    ftm_enable_pwm(&dc_ftm, 0);
-    ftm_enable_pwm(&dc_ftm, 1);
-    ftm_set_duty(&dc_ftm, 0, 0);
-    ftm_set_duty(&dc_ftm, 1, 0);
+    ftm_enable_pwm(&dc_ftm, STAR_CH_FWD);
+    ftm_enable_pwm(&dc_ftm, STAR_CH_BACK);
+    ftm_enable_pwm(&dc_ftm, PORT_CH_FWD);
+    ftm_enable_pwm(&dc_ftm, PORT_CH_BACK);
+    ftm_set_duty(&dc_ftm, STAR_CH_FWD, 0);
+    ftm_set_duty(&dc_ftm, STAR_CH_BACK, 0);
+    ftm_set_duty(&dc_ftm, PORT_CH_FWD, 0);
+    ftm_set_duty(&dc_ftm, PORT_CH_BACK, 0);
     ftm_enable_int(&dc_ftm);
 
     // Configure Servo FTM

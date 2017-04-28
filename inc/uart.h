@@ -14,10 +14,12 @@ extern char str[100];
 
 #define BAUD_RATE 9600      //default baud rate 
 #define UART0_TXRX_ENABLE 0x00C0
+#define BUFLEN 240
 
 typedef struct uart_driver {
     UART_Type *regs;
     IRQn_Type irq;
+    char buffer[BUFLEN]; // print up to three full lines
 } uart_driver;
 
 /* 
@@ -46,4 +48,5 @@ void uart_putchar(uart_driver *drv, char ch);
  */
 void printu(uart_driver *drv, char *format, ...);
 
+void print_serial(uart_driver *drv, char *format, ...);
 #endif
