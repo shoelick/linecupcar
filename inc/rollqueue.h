@@ -35,3 +35,4 @@ double get_average(const rollqueue const *d);
  * Get the average slope of the last n data points.
  */
 double get_ending_slope(const rollqueue const *d, const size_t n);
+double rollqueue_max(const rollqueue const *d);

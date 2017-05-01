@@ -191,7 +191,7 @@ int find_blob(const int const * data, const size_t len, const int val) {
 
     /* Used to fight noise; allow spaces between blob vals */
     int pix_since_last = 0;
-    int newthresh = 30;
+    int newthresh = 0;
 
     /* loop counter */
     int i;

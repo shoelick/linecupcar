@@ -80,12 +80,12 @@ const double STEER_CENTER = 0.5;
  * Max speed [0, 1.0]
  * Corresponds to FTM duty
  */
-const double DC_MAX = 0.52;
+const double DC_MAX = 0.55;
 //const double DC_MAX = 0.3;
-const double DC_MIN = 0.25;
+const double DC_MIN = 0.4;
 
 /* PID Constants */
-const double Kp = 0.55, Ki = 0.05, Kd = 0.1;
+const double Kp = 0.95, Ki = 0.05, Kd = 0.1;
 
 /* FTM Channels */
 const int CH_SERVO = 0;
@@ -95,8 +95,8 @@ const int PORT_CH_FWD = 1;
 const int PORT_CH_BACK = 5;
 
 /* Goal bounds */
-const double LEFT_BOUND = 0.3;
-const double RIGHT_BOUND = 0.8;
+const double LEFT_BOUND = 0.1;
+const double RIGHT_BOUND = 0.9;
 
 ftm_driver dc_ftm, servo_ftm, camera_ftm;
 adc_driver adc;
@@ -139,7 +139,7 @@ int main() {
     const int LEFT_VAL = -1;
     int right_ind, left_ind;
     double right_pos, left_pos, right_d, left_d;
-    double c_thresh = 0.3;
+    double c_thresh = 0.2;
 
     /* Initialize camera struct valus */
     camera.pixcnt = 0;
@@ -150,8 +150,8 @@ int main() {
     camera.adc = &adc;
 
     /* Initialize rolling steer history */
-    sys_error = init_rollqueue(&steer_hist, 10);
-    sys_error = init_rollqueue(&error_hist, 7);
+    sys_error = init_rollqueue(&steer_hist, 3);
+    sys_error = init_rollqueue(&error_hist, 4);
 
     /***************************************************************************
      * CONFIGURATION
@@ -188,7 +188,7 @@ int main() {
              * More noise clean and normalize
              */
             //convolve(&filtered[0], &normalized[0], SCAN_LEN, GAUSS_SMOOTH_7, 7);
-            convolve(filtered, normalized, SCAN_LEN, BOXCAR_5, 5);
+            convolve(filtered, normalized, SCAN_LEN, BOXCAR_4, 4);
             //convolve(&normalized[0], &filtered[0], SCAN_LEN, LOW_PASS5, 5);
             d_normalize(normalized, filtered, SCAN_LEN);
 
@@ -227,7 +227,7 @@ int main() {
             if (right_ind != -1 && left_ind != -1) {
 
                 // Get each line's distance from the center
-                right_d = fabs(0.5 - right_pos);
+                /*right_d = fabs(0.5 - right_pos);
                 left_d = fabs(0.5 - left_pos);
 
                 // Else if right is close to center  
@@ -241,7 +241,9 @@ int main() {
                 } else {
                      // use the center
                     position = 1 - ((right_pos + left_pos) / 2);
-                }
+                }*/
+
+                position = 2 * (right_pos + left_pos) / 2 - 0.5;
 
                 // we found lines; show the blue light
                 line_detected = 1;
@@ -290,7 +292,8 @@ int main() {
         /*derivative = error - old_err;*/
 
         /* P */
-        steering = 0.5 + Kp * get_average(&error_hist);
+        steering = 0.5 + Kp * error;
+        //steering = 0.5 + Kp * error;
 
         /* PI */
         /*steering = 
@@ -303,13 +306,18 @@ int main() {
             Ki * integral +
             Kd * derivative; */
 
+        /* PD? */
+        steering = 
+            0.5 + Kp * error + 
+            Kd * get_ending_slope(&error_hist, 3);
+
         /*goal = (RIGHT_BOUND - LEFT_BOUND) * (get_average(&steer_hist)) + \
             LEFT_BOUND;*/
         add_data(&steer_hist, steering);
         add_data(&error_hist, error);
 
         /***********************************************************************
-         * HARDWARE UPDATE
+         * THROTTLE UPDATE
          **********************************************************************/
 
         /* Update steering pid */
@@ -318,11 +326,21 @@ int main() {
             /* Throttle update; only happens when running */
 
             // constant throttle
-            //s_throttle = p_throttle = DC_MAX;
+            //sg_throttle = pg_throttle = DC_MAX;
 
             // Linearly proportional to steering
             sg_throttle = pg_throttle = (DC_MAX-DC_MIN) * \
-                (1 - (fabs(steering - 0.5) / 0.5) ) + DC_MIN;
+                1.2 * (1 - (fabs(steering - 0.5) / 0.5) ) + DC_MIN;
+
+            if (rollqueue_max(&steer_hist) > 0.75) {
+            
+                sg_throttle *= 0.2;
+
+            } else if (rollqueue_max(&steer_hist) < 0.25) {
+
+                pg_throttle *= 0.2;
+
+            }
 
             // Exponentially proportional to steering?
             //s_throttle = p_throttle = pow(fabs(steering - 0.5), 2) * DC_MAX;
@@ -332,9 +350,12 @@ int main() {
             pg_throttle = bound(pg_throttle, 0, DC_MAX);
 
             // update values 
-            p_throttle += (pg_throttle - p_throttle) * 0.1;
-            s_throttle += (sg_throttle - s_throttle) * 0.1;
-            
+            //p_throttle += (pg_throttle - p_throttle) * 0.1;
+            //s_throttle += (sg_throttle - s_throttle) * 0.1;
+            s_throttle = sg_throttle;
+            p_throttle = pg_throttle;
+
+
             pbwd_throttle = sbwd_throttle = 0.0;
         } else {
 
@@ -351,6 +372,9 @@ int main() {
             steering = STEER_CENTER;
         }
 
+        /***********************************************************************
+         * HARDWARE UPDATE
+         **********************************************************************/
         /* Motors Update */
         ftm_set_duty(&dc_ftm, STAR_CH_FWD, s_throttle);
         ftm_set_duty(&dc_ftm, PORT_CH_FWD, p_throttle);
@@ -373,17 +397,16 @@ int main() {
                 (int) (p_throttle * 1000), (int) (pg_throttle * 1000),
                 (int) (s_throttle * 1000), (int) (sg_throttle * 1000));*/
 
-        /*print_serial(&bt_uart, \
-                "Position: %d Steering %d Error: %d\n\r",
-                (int) (1000 * position), (int) (1000 * steering),
-                (int) (1000 * error));*/
-
         print_serial(&bt_uart, \
-                "Left pos: %d Left distance: %d Right pos: %d " \
-                "Right distance %d position: %d error: %d\n\r", 
-                (int) (left_pos * 1000), (int) (left_d * 1000), 
-                (int) (right_pos * 1000), (int) (right_d * 1000),
-                (int) (position * 1000), (int) (error * 1000));
+                "Position: %d Steering avg: %d Error avg: %d Goal: %d\n\r",
+                (int) (1000 * position), (int) (1000 * get_average(&steer_hist)),
+                (int) (1000 * get_average(&error_hist)), 
+                (int) (1000 * goal));
+
+        /*print_serial(&bt_uart, \
+                "Left pos: %d Right pos: %d Position: %d Error: %d\n\r", 
+                (int) (left_pos * 1000), (int) (right_pos * 1000), 
+                (int) (position * 1000), (int) (error * 1000));*/
 
         /***********************************************************************
          * STATE AND LED MANAGEMENT 

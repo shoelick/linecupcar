@@ -36,7 +36,7 @@ int add_data(rollqueue *d, const double val) {
 
 double get_average(const rollqueue const *d) {
 
-    double sum = 0;
+    double sum = 0.0;
 
     for (int i = 0; i < d->len; i++) {
         sum += d->data[i];
@@ -80,4 +80,17 @@ double get_ending_slope(const rollqueue const *d, const size_t n) {
     }
 
     return sum / n;
+}
+
+double rollqueue_max(const rollqueue const *d) {
+
+    int max = 0;
+
+    for (int i = 0; i < d->len; i++) {
+
+        if (d->data[max] < d->data[i]) max = i;
+
+    }
+
+    return d->data[max];
 }
