@@ -102,14 +102,14 @@ void d_normalize(double *dest, const double *data, const size_t n) {
 void threshold(int *dest, const double * const data, size_t n, double threshold) 
 {
     int i;
-    //int c = 10;
+    int c = 14;
     for (i = 0; i < n; i++ ) {
 
         // Clip lower to avoid weird bias
-        /*if (i < c) {
+        if (i < c) {
             dest[i] = 0;
-        }*/
-        if (data[i] <= 0) {
+        }
+        else if (data[i] <= 0) {
             // if neg
             dest[i] = (data[i] > -threshold) ? 0 : -1;
         } else {
@@ -117,66 +117,6 @@ void threshold(int *dest, const double * const data, size_t n, double threshold)
             dest[i] = (data[i] < threshold) ? 0 : 1;
         }
     }
-}
-
-/*
- * Takes in the signed threshold'd data and counts the detected black line 
- * blobs.
- */
-int center_average(int const * const data, size_t len) {
-
-    int count = 0, width = 0, i;
-    uint8_t found_line = 0;
-    int pix_since_last_1 = 0;
-    int index_start = 0;
-    int index_of_last = 0;
-    int newthresh = 30;
-    int widththresh = 10;
-    int sum = 0;
-    for (i = 0; i < len; i++) {
-
-        if (data[i] == 1) {
-
-            if (!found_line) {
-                //printu("Line start at %d\n\r", i);
-                count += 1;
-                width = 0;
-                found_line = 1;
-                index_start = i;
-            } else {
-                width += 1;
-            }
-
-            pix_since_last_1 = 0;
-            index_of_last = i;
-        } 
-        else if (data[i] == 0 && found_line) {
-
-            if (pix_since_last_1 > newthresh) {
-                //printu("Line finished at %d\n\r", i); 
-
-                if (width < widththresh) {
-                    //printu("Line ignored with width %d\n\r", width); 
-                    count--;
-                }  else {
-
-                    sum += (index_of_last + index_start)/2; 
-                    //printu("Sum is now: %d\n\r", sum);
-                }
-                found_line = 0;
-            } else {
-                pix_since_last_1++;
-            }
-        }
-    }
-
-    if (found_line) {
-        //printu("Assuming final one at %d\n\r", index_of_last); 
-        sum += (index_of_last + index_start) /2;
-        //printu("Sum is now: %d\n\r", sum);
-    }
-
-    return sum / count;
 }
 
 /*
@@ -205,7 +145,7 @@ int find_blob(const int const * data, const size_t len, const int val) {
     int index_of_end_max = 0;
 
     /* Minimum width of a blob to be considered */
-    int widththresh = 0; // DO NOT CHANGE WITHOUT MAKING A BIG DEAL
+    int widththresh = 1; // DO NOT CHANGE WITHOUT MAKING A BIG DEAL
     int width;
 
     int final = 0;

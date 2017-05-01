@@ -141,13 +141,10 @@ void uart_put(uart_driver *drv, char *ptr_str)
  */
 void printu(uart_driver *drv, char *format, ...) {
 
-    if (ENABLE_PRINT) { 
-        va_list args;
-        va_start(args, format);
-        vsprintf(str, format, args);
-        uart_put(drv, str);
-    }
-
+    va_list args;
+    va_start(args, format);
+    vsprintf(str, format, args);
+    uart_put(drv, str);
 }
 
 void print_serial(uart_driver *drv, char *format, ...) {
@@ -156,8 +153,6 @@ void print_serial(uart_driver *drv, char *format, ...) {
     static int len = 0;
     int i;
     va_list args;
-
-    if (!ENABLE_PRINT) return;
 
     if (drv == NULL || format == NULL) {
         return;
@@ -173,10 +168,6 @@ void print_serial(uart_driver *drv, char *format, ...) {
 
     // print this many chars at a time
     for (i = 0; i < 10 && ind < len; i++) {
-        uart_putchar(drv, drv->buffer[ind++]);
-        uart_putchar(drv, drv->buffer[ind++]);
-        uart_putchar(drv, drv->buffer[ind++]);
-        uart_putchar(drv, drv->buffer[ind++]);
         uart_putchar(drv, drv->buffer[ind++]);
     }
     return;

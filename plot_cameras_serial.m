@@ -18,7 +18,7 @@
 
 function plot_camera_serial
 %delete(instrfindall)
-%Send over bluetooth or serial
+%x      Send over bluetooth or serial
 %serialPort = 'COM165';
 %serialPort = '/dev/cu.usbmodem1422';
 serialPort = '/dev/cu.HC-06-DevB';

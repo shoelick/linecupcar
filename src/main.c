@@ -52,7 +52,7 @@
 #include "util.h"
 
 /* Used to debug camera processing */
-static void matlab_print(void);
+static void matlab_print(uart_driver *drv);
 static void hardware_init();
 
 unsigned long DEFAULT_SYSTEM_CLOCK = 20485760U;
@@ -80,12 +80,12 @@ const double STEER_CENTER = 0.5;
  * Max speed [0, 1.0]
  * Corresponds to FTM duty
  */
-const double DC_MAX = 0.50;
+const double DC_MAX = 0.55;
 //const double DC_MAX = 0.3;
-const double DC_MIN = 0.2;
+const double DC_MIN = 0.35;
 
 /* PID Constants */
-const double Kp = 0.9, Ki = 0.05, Kd = 0.8;
+const double Kp = 0.6, Ki = 0.05, Kd = 0.8;
 
 /* FTM Channels */
 const int CH_SERVO = 0;
@@ -100,7 +100,7 @@ const double RIGHT_BOUND = 0.9;
 
 ftm_driver dc_ftm, servo_ftm, camera_ftm;
 adc_driver adc;
-uart_driver cam_uart, bt_uart;
+uart_driver usb_uart, bt_uart;
 
 int main() {
 
@@ -196,7 +196,7 @@ int main() {
              * Causes definite line blobs to clip and enhances the less 
              * pronounced dark line blobs
              */
-            amplify(normalized, normalized, SCAN_LEN, 6.5);
+            amplify(normalized, normalized, SCAN_LEN, 7.2);
 
             /* 
              * Threshold for clipped values
@@ -204,7 +204,7 @@ int main() {
             threshold(processed, normalized, SCAN_LEN, 0.90); 
 
             /* Output to UART if enabled */
-            if (DEBUG_CAM) matlab_print();
+            if (DEBUG_CAM) matlab_print(&bt_uart);
 
             /*******************************************************************
              * POSITION CALCULATION
@@ -253,11 +253,11 @@ int main() {
 
                 // ... and we have the right one...
                 if (right_ind != -1) {
-                    position = right_pos + 0.5;
+                    position = right_pos;
                 }
                 // ... and we have the left one...
                 else if (left_ind != -1) {
-                    position = 0.5 - left_pos;
+                    position = goal - left_pos;
                 }
                 
                 // we found lines; show the blue light
@@ -265,8 +265,8 @@ int main() {
 
             } else {
                 line_detected = 0;
-                steering = STEER_CENTER;
-                position = 0.5; // go straight 
+                //steering = STEER_CENTER;
+                //position = 0.5; // go straight 
                 // TODO: Keep track of time we haven't seen a line 
             }
 
@@ -455,25 +455,28 @@ int main() {
  * This function prints out camera values in a format expected by a listening 
  * matlab instance.
  */
-static void matlab_print() { int i; 
+static void matlab_print(uart_driver *drv) { 
+    
+    int i; 
+
     //if (capcnt >= (2/INTEGRATION_TIME)) {
     if (camera.capcnt >= (400)) {
         // Set SI
         //GPIOC_PCOR |= (1 << 4);
         // send the array over uart
-        //sprintf(str,"%d\n\r",-2); // start value
-        //uart_put(&cam_uart, str);
-        printu(&bt_uart,"%d\n\r",-2); // start value
+        sprintf(str,"%d\n\r",-2); // start value
+        uart_put(drv, str);
+        //printu(&bt_uart,"%d\n\r",-2); // start value
         for (i = 0; i < SCAN_LEN - 1; i++) {
             //sprintf(str,"%d\r\n", (int) (camera.wbuffer[i] * 10000));
             //sprintf(str,"%d\r\n", (int) (filtered[i] * 100.0));
             //sprintf(str, "%d\r\n", (int) (normalized[i] * 1000.0));
             sprintf(str,"%d\r\n", processed[i]);
-            uart_put(&bt_uart, str);
+            uart_put(drv, str);
         }
-        printu(&bt_uart,"%d\n\r",-3); // start value
-        //sprintf(str,"%d\n\r",-3); // end value
-        //uart_put(&cam_uart, str);
+        //printu(&bt_uart,"%d\n\r",-3); // start value
+        sprintf(str,"%d\n\r",-3); // end value
+        uart_put(drv, str);
         camera.capcnt = 0;
         //GPIOC_PSOR |= (1 << 4);
     }
@@ -509,7 +512,7 @@ static void hardware_init() {
     button_init();
 
     // Initialize uart for debugging
-    uart_init(&cam_uart, 0);
+    uart_init(&usb_uart, 0);
     uart_init(&bt_uart, 3);
 
     // Configure DC FTM
