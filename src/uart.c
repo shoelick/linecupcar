@@ -141,7 +141,7 @@ void uart_put(uart_driver *drv, char *ptr_str)
  */
 void printu(uart_driver *drv, char *format, ...) {
 
-    if (!DEBUG_CAM && ENABLE_PRINT) { 
+    if (ENABLE_PRINT) { 
         va_list args;
         va_start(args, format);
         vsprintf(str, format, args);

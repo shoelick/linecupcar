@@ -80,12 +80,12 @@ const double STEER_CENTER = 0.5;
  * Max speed [0, 1.0]
  * Corresponds to FTM duty
  */
-const double DC_MAX = 0.55;
+const double DC_MAX = 0.50;
 //const double DC_MAX = 0.3;
-const double DC_MIN = 0.4;
+const double DC_MIN = 0.2;
 
 /* PID Constants */
-const double Kp = 0.95, Ki = 0.05, Kd = 0.1;
+const double Kp = 0.9, Ki = 0.05, Kd = 0.8;
 
 /* FTM Channels */
 const int CH_SERVO = 0;
@@ -126,9 +126,9 @@ int main() {
 
     /* Position tracking */
     //int center = 0;
-    double position;
-    double goal = 0.50; // for now, let's stick to staying the middle 
-    rollqueue steer_hist, error_hist, int_hist;
+    double position, derivative;
+    double goal = 0.6; // for now, let's stick to staying the middle 
+    rollqueue steer_hist, error_hist;
 
     /* 
      * Using the derivative, we end up producing different values for 
@@ -138,8 +138,7 @@ int main() {
     const int RIGHT_VAL = 1;
     const int LEFT_VAL = -1;
     int right_ind, left_ind;
-    double right_pos, left_pos, right_d, left_d;
-    double c_thresh = 0.2;
+    double right_pos, left_pos;
 
     /* Initialize camera struct valus */
     camera.pixcnt = 0;
@@ -150,8 +149,8 @@ int main() {
     camera.adc = &adc;
 
     /* Initialize rolling steer history */
-    sys_error = init_rollqueue(&steer_hist, 3);
-    sys_error = init_rollqueue(&error_hist, 4);
+    sys_error = init_rollqueue(&steer_hist, 4);
+    sys_error = init_rollqueue(&error_hist, 10);
 
     /***************************************************************************
      * CONFIGURATION
@@ -284,6 +283,7 @@ int main() {
 
         /* Update error */
         error = goal-position;
+        add_data(&error_hist, error);
 
         /* Accumulate error */
         /*integral += error;
@@ -292,8 +292,9 @@ int main() {
         /*derivative = error - old_err;*/
 
         /* P */
-        steering = 0.5 + Kp * error;
+        //steering = 0.5 + Kp * pow(error, 2);
         //steering = 0.5 + Kp * error;
+        steering = 0.5 + Kp * get_average(&error_hist);
 
         /* PI */
         /*steering = 
@@ -307,14 +308,15 @@ int main() {
             Kd * derivative; */
 
         /* PD? */
+        /*derivative = get_ending_slope(&error_hist, 3);
         steering = 
+            //0.5 + Kp * error + 
             0.5 + Kp * error + 
-            Kd * get_ending_slope(&error_hist, 3);
+            Kd * derivative;*/
 
         /*goal = (RIGHT_BOUND - LEFT_BOUND) * (get_average(&steer_hist)) + \
             LEFT_BOUND;*/
         add_data(&steer_hist, steering);
-        add_data(&error_hist, error);
 
         /***********************************************************************
          * THROTTLE UPDATE
@@ -330,20 +332,26 @@ int main() {
 
             // Linearly proportional to steering
             sg_throttle = pg_throttle = (DC_MAX-DC_MIN) * \
-                1.2 * (1 - (fabs(steering - 0.5) / 0.5) ) + DC_MIN;
-
-            if (rollqueue_max(&steer_hist) > 0.75) {
-            
-                sg_throttle *= 0.2;
-
-            } else if (rollqueue_max(&steer_hist) < 0.25) {
-
-                pg_throttle *= 0.2;
-
-            }
+                (1 - (fabs(steering - 0.5) / 0.5) ) + DC_MIN;
 
             // Exponentially proportional to steering?
             //s_throttle = p_throttle = pow(fabs(steering - 0.5), 2) * DC_MAX;
+
+            pbwd_throttle = sbwd_throttle = 0.0;
+
+            /*if (rollqueue_max(&steer_hist) > 0.65) {
+            
+                sg_throttle = 0;
+                pg_throttle = 0.8;
+                sbwd_throttle = 0.4;
+
+            } else if (rollqueue_max(&steer_hist) < 0.35) {
+
+                pg_throttle *= 0;
+                sg_throttle = 0.8;
+                pbwd_throttle = 0.4;
+
+            }*/
 
             // Cap at DC_MAX, just in case
             sg_throttle = bound(sg_throttle, 0, DC_MAX);
@@ -356,7 +364,6 @@ int main() {
             p_throttle = pg_throttle;
 
 
-            pbwd_throttle = sbwd_throttle = 0.0;
         } else {
 
             // otherwise slow down
@@ -389,24 +396,26 @@ int main() {
          * STATUS REPORT
          **********************************************************************/
 
-        /*print_serial(&bt_uart, \
-                "Goal: %5d Position: %5d Steer: %5d " \
-                "Port Throttle (actual / goal): %5d / %-5d " \
-                "Starboard Throttle (actual / goal): %5d / %-5d \r\n",
-                (int) (goal * 1000), (int) (position * 1000), (int) (steering * 1000), 
-                (int) (p_throttle * 1000), (int) (pg_throttle * 1000),
-                (int) (s_throttle * 1000), (int) (sg_throttle * 1000));*/
+        if (ENABLE_PRINT) {
+            /*print_serial(&bt_uart, \
+                    "Goal: %5d Position: %5d Steer: %5d " \
+                    "Port Throttle (actual / goal): %5d / %-5d " \
+                    "Starboard Throttle (actual / goal): %5d / %-5d \r\n",
+                    (int) (goal * 1000), (int) (position * 1000), (int) (steering * 1000), 
+                    (int) (p_throttle * 1000), (int) (pg_throttle * 1000),
+                    (int) (s_throttle * 1000), (int) (sg_throttle * 1000));*/
 
-        print_serial(&bt_uart, \
-                "Position: %d Steering avg: %d Error avg: %d Goal: %d\n\r",
-                (int) (1000 * position), (int) (1000 * get_average(&steer_hist)),
-                (int) (1000 * get_average(&error_hist)), 
-                (int) (1000 * goal));
+            /*print_serial(&bt_uart, \
+                    "Position: %d Steering: %d Error avg: %d Derivative: %d\n\r",
+                    (int) (1000 * position), (int) (1000 * steering),
+                    (int) (1000 * get_average(&error_hist)), 
+                    (int) (1000 * derivative));*/
 
-        /*print_serial(&bt_uart, \
-                "Left pos: %d Right pos: %d Position: %d Error: %d\n\r", 
-                (int) (left_pos * 1000), (int) (right_pos * 1000), 
-                (int) (position * 1000), (int) (error * 1000));*/
+            print_serial(&bt_uart, \
+                    "Left pos: %d Right pos: %d Position: %d Error: %d\n\r", 
+                    (int) (left_pos * 1000), (int) (right_pos * 1000),
+                    (int) (position * 1000), (int) (error * 1000));
+        }
 
         /***********************************************************************
          * STATE AND LED MANAGEMENT 
@@ -452,17 +461,19 @@ static void matlab_print() { int i;
         // Set SI
         //GPIOC_PCOR |= (1 << 4);
         // send the array over uart
-        sprintf(str,"%d\n\r",-2); // start value
-        uart_put(&cam_uart, str);
+        //sprintf(str,"%d\n\r",-2); // start value
+        //uart_put(&cam_uart, str);
+        printu(&bt_uart,"%d\n\r",-2); // start value
         for (i = 0; i < SCAN_LEN - 1; i++) {
             //sprintf(str,"%d\r\n", (int) (camera.wbuffer[i] * 10000));
             //sprintf(str,"%d\r\n", (int) (filtered[i] * 100.0));
             //sprintf(str, "%d\r\n", (int) (normalized[i] * 1000.0));
             sprintf(str,"%d\r\n", processed[i]);
-            uart_put(&cam_uart, str);
+            uart_put(&bt_uart, str);
         }
-        sprintf(str,"%d\n\r",-3); // end value
-        uart_put(&cam_uart, str);
+        printu(&bt_uart,"%d\n\r",-3); // start value
+        //sprintf(str,"%d\n\r",-3); // end value
+        //uart_put(&cam_uart, str);
         camera.capcnt = 0;
         //GPIOC_PSOR |= (1 << 4);
     }

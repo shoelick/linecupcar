@@ -20,7 +20,8 @@ function plot_camera_serial
 %delete(instrfindall)
 %Send over bluetooth or serial
 %serialPort = 'COM165';
-serialPort = '/dev/cu.usbmodem1422';
+%serialPort = '/dev/cu.usbmodem1422';
+serialPort = '/dev/cu.HC-06-DevB';
 serialObject = serial(serialPort);
 %configure serial connection
 serialObject.BaudRate = 9600; %(Default)

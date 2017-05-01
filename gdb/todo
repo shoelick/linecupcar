@@ -1,0 +1,14 @@
+
+
+
+
+
+
+MICHAEL ------
+
+You left this about to play with some kind of weighted average for the position calculation. 
+
+Then you need to see how that works with your PD term.
+
+Then work on increasing speed and using differential throttling, and maybe differential steering.
+

@@ -48,7 +48,7 @@ double get_average(const rollqueue const *d) {
 
 double get_ending_slope(const rollqueue const *d, const size_t n) {
 
-    int sum = 0;
+    double sum = 0;
     size_t p = 0;
 
     /* Catch null pointer */
@@ -68,13 +68,17 @@ double get_ending_slope(const rollqueue const *d, const size_t n) {
        
         /* 
          * Wrap around.
-         * less than 1 because we use the slope of the two points before index p 
          */
-        if (p < 1) {
-            p = d->len - 1;
+       
+        if (p == 0) {
+            sum += d->data[p] - d->data[d->len-1];
+        } else {
+            sum += (d->data[p] - d->data[p - 1]);
         }
 
-        sum += (d->data[p] - d->data[p - 1]);
+        if (p <= 0) {
+            p = d->len - 1;
+        }
 
         p--;
     }
