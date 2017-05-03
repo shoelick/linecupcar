@@ -80,12 +80,12 @@ const double STEER_CENTER = 0.5;
  * Max speed [0, 1.0]
  * Corresponds to FTM duty
  */
-const double DC_MAX = 0.55;
+const double DC_MAX = 0.50;
 //const double DC_MAX = 0.3;
 const double DC_MIN = 0.35;
 
 /* PID Constants */
-const double Kp = 0.6, Ki = 0.05, Kd = 0.8;
+const double Kp = 0.77, Ki = 0.05, Kd = 0.8;
 
 /* FTM Channels */
 const int CH_SERVO = 0;
@@ -127,7 +127,7 @@ int main() {
     /* Position tracking */
     //int center = 0;
     double position, derivative;
-    double goal = 0.6; // for now, let's stick to staying the middle 
+    double goal = 0.65; // for now, let's stick to staying the middle 
     rollqueue steer_hist, error_hist;
 
     /* 
@@ -139,6 +139,7 @@ int main() {
     const int LEFT_VAL = -1;
     int right_ind, left_ind;
     double right_pos, left_pos;
+    int lineless_cycles = 0;
 
     /* Initialize camera struct valus */
     camera.pixcnt = 0;
@@ -242,10 +243,12 @@ int main() {
                     position = 1 - ((right_pos + left_pos) / 2);
                 }*/
 
-                position = 2 * (right_pos + left_pos) / 2 - 0.5;
+                position = 2.0 * (right_pos + left_pos) / 2.0 - 0.5;
+                //position = ((right_pos + left_pos) / 2);
 
                 // we found lines; show the blue light
                 line_detected = 1;
+                lineless_cycles = 0;
             } 
 
             // else if we found either line  
@@ -253,20 +256,24 @@ int main() {
 
                 // ... and we have the right one...
                 if (right_ind != -1) {
-                    position = right_pos;
+                    position = right_pos + goal;
                 }
                 // ... and we have the left one...
                 else if (left_ind != -1) {
-                    position = goal - left_pos;
+                    position = left_pos - goal;
                 }
                 
                 // we found lines; show the blue light
                 line_detected = 1;
+                lineless_cycles = 0;
 
             } else {
                 line_detected = 0;
-                //steering = STEER_CENTER;
-                //position = 0.5; // go straight 
+                lineless_cycles++;
+                if (lineless_cycles > 20) {
+                    steering = STEER_CENTER;
+                    position = 0.5; // go straight 
+                }
                 // TODO: Keep track of time we haven't seen a line 
             }
 
@@ -468,10 +475,10 @@ static void matlab_print(uart_driver *drv) {
         uart_put(drv, str);
         //printu(&bt_uart,"%d\n\r",-2); // start value
         for (i = 0; i < SCAN_LEN - 1; i++) {
-            //sprintf(str,"%d\r\n", (int) (camera.wbuffer[i] * 10000));
+            sprintf(str,"%d\r\n", (int) (camera.wbuffer[i] * 10000));
             //sprintf(str,"%d\r\n", (int) (filtered[i] * 100.0));
             //sprintf(str, "%d\r\n", (int) (normalized[i] * 1000.0));
-            sprintf(str,"%d\r\n", processed[i]);
+            //sprintf(str,"%d\r\n", processed[i]);
             uart_put(drv, str);
         }
         //printu(&bt_uart,"%d\n\r",-3); // start value
