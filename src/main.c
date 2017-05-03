@@ -85,7 +85,7 @@ const double DC_MAX = 0.50;
 const double DC_MIN = 0.35;
 
 /* PID Constants */
-const double Kp = 0.77, Ki = 0.05, Kd = 0.8;
+const double Kp = 0.7, Ki = 0.05, Kd = 0.5;
 
 /* FTM Channels */
 const int CH_SERVO = 0;
@@ -270,7 +270,7 @@ int main() {
             } else {
                 line_detected = 0;
                 lineless_cycles++;
-                if (lineless_cycles > 20) {
+                if (lineless_cycles > 15) {
                     steering = STEER_CENTER;
                     position = 0.5; // go straight 
                 }
@@ -301,7 +301,7 @@ int main() {
         /* P */
         //steering = 0.5 + Kp * pow(error, 2);
         //steering = 0.5 + Kp * error;
-        steering = 0.5 + Kp * get_average(&error_hist);
+        //steering = 0.5 + Kp * get_average(&error_hist);
 
         /* PI */
         /*steering = 
@@ -315,11 +315,11 @@ int main() {
             Kd * derivative; */
 
         /* PD? */
-        /*derivative = get_ending_slope(&error_hist, 3);
+        derivative = get_ending_slope(&error_hist, 3);
         steering = 
             //0.5 + Kp * error + 
-            0.5 + Kp * error + 
-            Kd * derivative;*/
+            0.5 + Kp * get_average(&error_hist) +
+            Kd * derivative;
 
         /*goal = (RIGHT_BOUND - LEFT_BOUND) * (get_average(&steer_hist)) + \
             LEFT_BOUND;*/
