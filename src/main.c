@@ -67,7 +67,7 @@ int processed[SCAN_LEN];
 //const double SERVO_MIN  = 0.0525;
 const double SERVO_MIN  = 0.05;
 const double SERVO_MAX  = 0.097;
-const double STEER_CENTER = 0.5;
+const double STEER_CENTER = 0.55;
 
 /* 
  * Macro to turn the setpoint into a servo duty 
@@ -85,7 +85,7 @@ const double DC_MAX = 0.50;
 const double DC_MIN = 0.35;
 
 /* PID Constants */
-const double Kp = 0.7, Ki = 0.05, Kd = 0.5;
+const double Kp = 0.73, Ki = 0.05, Kd = 0.8;
 
 /* FTM Channels */
 const int CH_SERVO = 0;
@@ -127,7 +127,7 @@ int main() {
     /* Position tracking */
     //int center = 0;
     double position, derivative;
-    double goal = 0.65; // for now, let's stick to staying the middle 
+    double goal = 0.58; // for now, let's stick to staying the middle 
     rollqueue steer_hist, error_hist;
 
     /* 
@@ -151,7 +151,7 @@ int main() {
 
     /* Initialize rolling steer history */
     sys_error = init_rollqueue(&steer_hist, 4);
-    sys_error = init_rollqueue(&error_hist, 10);
+    sys_error = init_rollqueue(&error_hist, 8);
 
     /***************************************************************************
      * CONFIGURATION
@@ -270,7 +270,7 @@ int main() {
             } else {
                 line_detected = 0;
                 lineless_cycles++;
-                if (lineless_cycles > 15) {
+                if (lineless_cycles > 4) {
                     steering = STEER_CENTER;
                     position = 0.5; // go straight 
                 }
@@ -301,7 +301,7 @@ int main() {
         /* P */
         //steering = 0.5 + Kp * pow(error, 2);
         //steering = 0.5 + Kp * error;
-        //steering = 0.5 + Kp * get_average(&error_hist);
+        steering = 0.5 + Kp * get_average(&error_hist);
 
         /* PI */
         /*steering = 
@@ -315,11 +315,11 @@ int main() {
             Kd * derivative; */
 
         /* PD? */
-        derivative = get_ending_slope(&error_hist, 3);
+        /*derivative = get_ending_slope(&error_hist, 3);
         steering = 
             //0.5 + Kp * error + 
-            0.5 + Kp * get_average(&error_hist) +
-            Kd * derivative;
+            0.5 + Kp * error + 
+            Kd * derivative;*/
 
         /*goal = (RIGHT_BOUND - LEFT_BOUND) * (get_average(&steer_hist)) + \
             LEFT_BOUND;*/
